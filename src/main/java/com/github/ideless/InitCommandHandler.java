@@ -1,16 +1,17 @@
 package com.github.ideless;
 
+import com.google.gson.JsonSyntaxException;
 import java.io.IOException;
 import java.util.List;
 
 public class InitCommandHandler implements CommandHandler {
 
     private final SafeCommandHandler invalidParameterHandler;
-    private final FileIO fileIO;
+    private final ManifestReader manifestReader;
 
-    public InitCommandHandler(SafeCommandHandler invalidParameterHandler, FileIO templateReader) {
+    public InitCommandHandler(SafeCommandHandler invalidParameterHandler, ManifestReader manifestReader) {
         this.invalidParameterHandler = invalidParameterHandler;
-        this.fileIO = templateReader;
+        this.manifestReader = manifestReader;
     }
 
     @Override
@@ -19,15 +20,18 @@ public class InitCommandHandler implements CommandHandler {
             invalidParameterHandler.handle(parameters);
             return;
         }
-        String manifest = readManifest(parameters);
-        throw new InvalidJsonException("");
-    }
-
-    private String readManifest(List<String> parameters) throws InvalidTemplateException {
         try {
-            return fileIO.read(parameters.get(0) + "/.ideless");
-        } catch (IOException ex) {
+            Manifest manifest = manifestReader.read(parameters.get(0) + "/.ideless");
+            if (manifest == null)
+                throw new InvalidTemplateException("null manifest");
+            if (manifest.getInitFiles() == null)
+                throw new LackOfFieldException("initFiles");
+        }
+        catch (IOException ex) {
             throw new InvalidTemplateException(ex.getMessage());
+        }
+        catch (JsonSyntaxException ex) {
+            throw new InvalidJsonException(ex.getMessage());
         }
     }
 

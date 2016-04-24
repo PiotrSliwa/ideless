@@ -12,14 +12,14 @@ public class InitCommandHandlerTest {
     private static final String MANIFEST_PATH = "dummy/.ideless";
 
     private SafeCommandHandler defaultHandler;
-    private FileIO fileIO;
+    private ManifestReader manifestReader;
     private InitCommandHandler sut;
 
     @Before
     public void beforeTest() {
         defaultHandler = mock(SafeCommandHandler.class);
-        fileIO = mock(FileIO.class);
-        sut = new InitCommandHandler(defaultHandler, fileIO);
+        manifestReader = mock(ManifestReader.class);
+        sut = new InitCommandHandler(defaultHandler, manifestReader);
     }
 
     @Test
@@ -29,8 +29,20 @@ public class InitCommandHandlerTest {
     }
 
     @Test(expected = InvalidTemplateException.class)
-    public void shallThrowErrorWhenManifestCannotBeOpen() throws Exception {
-        when(fileIO.read(MANIFEST_PATH)).thenThrow(new IOException());
+    public void shallThrowErrorWhenManifestCannotBeRead() throws Exception {
+        when(manifestReader.read(MANIFEST_PATH)).thenThrow(new IOException());
+        sut.handle(Arrays.asList(PATH));
+    }
+
+    @Test(expected = InvalidTemplateException.class)
+    public void shallThrowErrorWhenNullManifestReturned() throws Exception {
+        when(manifestReader.read(MANIFEST_PATH)).thenReturn(null);
+        sut.handle(Arrays.asList(PATH));
+    }
+
+    @Test(expected = LackOfFieldException.class)
+    public void shallThrowErrorWhenEmptyManifestReturned() throws Exception {
+        when(manifestReader.read(MANIFEST_PATH)).thenReturn(new Manifest());
         sut.handle(Arrays.asList(PATH));
     }
 

@@ -38,4 +38,12 @@ public class InitCommandIT {
         assertThat(out, startsWith("Error: Invalid JSON ("));
     }
 
+    @Test
+    public void noInitFilesInManifestFile() throws IOException, ExecutableReturnedErrorException, RunnerException {
+        SandboxManager manager = new SandboxManager("invalidJsonAsManifestFile");
+        manager.write(".ideless", "{\"someField\":\"someValue\"}");
+        String out = Runner.run("init " + manager.getPath("."));
+        assertThat(out, startsWith("Error: Lack of 'initFiles' field"));
+    }
+
 }
