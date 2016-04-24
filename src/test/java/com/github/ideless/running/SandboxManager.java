@@ -39,4 +39,8 @@ public class SandboxManager {
         return dir + "/" + filename;
     }
 
+    public Runner getRunner() {
+        return new Runner(dir);
+    }
+
 }
