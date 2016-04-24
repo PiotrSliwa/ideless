@@ -8,10 +8,12 @@ public class InitCommandHandler implements CommandHandler {
 
     private final SafeCommandHandler invalidParameterHandler;
     private final ManifestReader manifestReader;
+    private final FileIO fileIO;
 
-    public InitCommandHandler(SafeCommandHandler invalidParameterHandler, ManifestReader manifestReader) {
+    public InitCommandHandler(SafeCommandHandler invalidParameterHandler, ManifestReader manifestReader, FileIO fileIO) {
         this.invalidParameterHandler = invalidParameterHandler;
         this.manifestReader = manifestReader;
+        this.fileIO = fileIO;
     }
 
     @Override
@@ -20,12 +22,22 @@ public class InitCommandHandler implements CommandHandler {
             invalidParameterHandler.handle(parameters);
             return;
         }
+        Manifest manifest = readManifest(parameters);
+        for (String path : manifest.getInitFiles()) {
+            try {
+                fileIO.read(path);
+            }
+            catch (IOException ex) {
+                throw new CannotFindFileException(path);
+            }
+        }
+    }
+
+    private Manifest readManifest(List<String> parameters) throws Exception {
         try {
             Manifest manifest = manifestReader.read(parameters.get(0) + "/.ideless");
-            if (manifest == null)
-                throw new InvalidTemplateException("null manifest");
-            if (manifest.getInitFiles() == null)
-                throw new LackOfFieldException("initFiles");
+            validate(manifest);
+            return manifest;
         }
         catch (IOException ex) {
             throw new InvalidTemplateException(ex.getMessage());
@@ -33,6 +45,13 @@ public class InitCommandHandler implements CommandHandler {
         catch (JsonSyntaxException ex) {
             throw new InvalidJsonException(ex.getMessage());
         }
+    }
+
+    private void validate(Manifest manifest) throws Exception {
+        if (manifest == null)
+            throw new InvalidTemplateException("null manifest");
+        if (manifest.getInitFiles() == null)
+            throw new LackOfFieldException("initFiles");
     }
 
 }

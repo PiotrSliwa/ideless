@@ -11,6 +11,13 @@ import org.junit.Test;
 
 public class InitCommandIT {
 
+    private SandboxManager initValid(String manifestData) throws IOException {
+        String testName = Thread.currentThread().getStackTrace()[2].getMethodName();
+        SandboxManager manager = new SandboxManager(testName);
+        manager.write(".ideless", manifestData);
+        return manager;
+    }
+
     @Test
     public void lackOfTemplateParameter() throws ExecutableReturnedErrorException, RunnerException {
         String out = Runner.run("init");
@@ -32,18 +39,23 @@ public class InitCommandIT {
 
     @Test
     public void invalidJsonAsManifestFile() throws ExecutableReturnedErrorException, RunnerException, IOException {
-        SandboxManager manager = new SandboxManager("invalidJsonAsManifestFile");
-        manager.write(".ideless", "invalid json");
+        SandboxManager manager = initValid("invalid json");
         String out = Runner.run("init " + manager.getPath("."));
         assertThat(out, startsWith("Error: Invalid JSON ("));
     }
 
     @Test
     public void noInitFilesInManifestFile() throws IOException, ExecutableReturnedErrorException, RunnerException {
-        SandboxManager manager = new SandboxManager("invalidJsonAsManifestFile");
-        manager.write(".ideless", "{\"someField\":\"someValue\"}");
+        SandboxManager manager = initValid("{\"someField\":\"someValue\"}");
         String out = Runner.run("init " + manager.getPath("."));
         assertThat(out, startsWith("Error: Lack of 'initFiles' field"));
+    }
+
+    @Test
+    public void absentInitFile() throws IOException, ExecutableReturnedErrorException, RunnerException {
+        SandboxManager manager = initValid("{\"initFiles\":[\"unknownFile\"]}");
+        String out = Runner.run("init " + manager.getPath("."));
+        assertThat(out, startsWith("Error: Cannot find file"));
     }
 
 }
