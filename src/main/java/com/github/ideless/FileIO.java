@@ -6,7 +6,7 @@ import java.nio.file.Paths;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class TemplateReader {
+public class FileIO {
 
     public String read(String path) throws IOException {
         try (Stream<String> stream = Files.lines(Paths.get(path))) {

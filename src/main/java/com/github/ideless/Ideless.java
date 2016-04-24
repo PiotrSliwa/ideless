@@ -18,9 +18,9 @@ public class Ideless {
             System.out.println("Error: " + arguments.get(0));
         };
 
-        TemplateReader templateReader = new TemplateReader();
+        FileIO fileIO = new FileIO();
         CommandDispatcher dispatcher = new CommandDispatcher(defaultHandler, errorHandler);
-        dispatcher.addHandler("init", new InitCommandHandler(defaultHandler, templateReader));
+        dispatcher.addHandler("init", new InitCommandHandler(defaultHandler, fileIO));
         dispatcher.dispatch(args);
 
     }

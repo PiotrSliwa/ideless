@@ -8,14 +8,14 @@ import static org.mockito.Mockito.*;
 public class InitCommandHandlerTest {
 
     private SafeCommandHandler defaultHandler;
-    private TemplateReader reader;
+    private FileIO fileIO;
     private InitCommandHandler sut;
 
     @Before
     public void beforeTest() {
         defaultHandler = mock(SafeCommandHandler.class);
-        reader = mock(TemplateReader.class);
-        sut = new InitCommandHandler(defaultHandler, reader);
+        fileIO = mock(FileIO.class);
+        sut = new InitCommandHandler(defaultHandler, fileIO);
     }
 
     @Test
@@ -27,7 +27,7 @@ public class InitCommandHandlerTest {
     @Test(expected = InvalidTemplateException.class)
     public void shallThrowErrorWhenTemplateIsInvalid() throws Exception {
         String invalidPath = "unknownTemplate";
-        when(reader.read(invalidPath)).thenReturn(null);
+        when(fileIO.read(invalidPath)).thenReturn(null);
         sut.handle(Arrays.asList(invalidPath));
     }
 

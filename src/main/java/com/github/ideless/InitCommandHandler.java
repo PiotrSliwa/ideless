@@ -5,11 +5,11 @@ import java.util.List;
 public class InitCommandHandler implements CommandHandler {
 
     private final SafeCommandHandler invalidParameterHandler;
-    private final TemplateReader templateReader;
+    private final FileIO fileIO;
 
-    public InitCommandHandler(SafeCommandHandler invalidParameterHandler, TemplateReader templateReader) {
+    public InitCommandHandler(SafeCommandHandler invalidParameterHandler, FileIO templateReader) {
         this.invalidParameterHandler = invalidParameterHandler;
-        this.templateReader = templateReader;
+        this.fileIO = templateReader;
     }
 
     @Override
