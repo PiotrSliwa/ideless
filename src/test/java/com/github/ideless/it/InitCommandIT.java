@@ -58,4 +58,14 @@ public class InitCommandIT {
         assertThat(out, startsWith("Error: Cannot find file"));
     }
 
+    @Test
+    public void shallCopyInitFiles() throws IOException, ExecutableReturnedErrorException, RunnerException {
+        String fileName = "file1";
+        String fileData = "some data";
+        SandboxManager manager = initValid("{\"initFiles\":[\"" + fileName + "\"]}");
+        manager.write(fileName, fileData);
+        String out = Runner.run("init " + manager.getPath("."));
+        assertThat(out, startsWith("Initializing file: " + fileName));
+    }
+
 }

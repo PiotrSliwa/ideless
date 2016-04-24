@@ -55,8 +55,8 @@ public class InitCommandHandlerTest {
     public void shallReadInitFiles() throws Exception {
         when(manifestReader.read(MANIFEST_PATH)).thenReturn(new Manifest(FILES));
         sut.handle(Arrays.asList(PATH));
-        verify(fileIO).read(FILES.get(0));
-        verify(fileIO).read(FILES.get(1));
+        verify(fileIO).read(PATH + "/" + FILES.get(0));
+        verify(fileIO).read(PATH + "/" + FILES.get(1));
     }
 
     @Test(expected = CannotFindFileException.class)
