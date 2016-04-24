@@ -23,16 +23,20 @@ public class SandboxManager {
     }
 
     public void write(String filename, String data) throws FileNotFoundException, IOException {
-        File file = new File(dir + "/" + filename);
+        File file = new File(getPath(filename));
         FileOutputStream fos = new FileOutputStream(file);
         fos.write(data.getBytes());
     }
 
     public String read(String filename) throws FileNotFoundException, IOException {
-        File file = new File(dir + "/" + filename);
+        File file = new File(getPath(filename));
         try (Stream<String> stream = Files.lines(file.toPath())) {
             return stream.collect(Collectors.joining("\n"));
         }
+    }
+
+    public String getPath(String filename) {
+        return dir + "/" + filename;
     }
 
 }

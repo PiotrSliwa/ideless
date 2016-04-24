@@ -1,5 +1,6 @@
 package com.github.ideless;
 
+import java.io.IOException;
 import java.util.List;
 
 public class InitCommandHandler implements CommandHandler {
@@ -18,7 +19,16 @@ public class InitCommandHandler implements CommandHandler {
             invalidParameterHandler.handle(parameters);
             return;
         }
-        throw new InvalidTemplateException();
+        String manifest = readManifest(parameters);
+        throw new InvalidJsonException("");
+    }
+
+    private String readManifest(List<String> parameters) throws InvalidTemplateException {
+        try {
+            return fileIO.read(parameters.get(0) + "/.ideless");
+        } catch (IOException ex) {
+            throw new InvalidTemplateException(ex.getMessage());
+        }
     }
 
 }

@@ -1,11 +1,15 @@
 package com.github.ideless;
 
+import java.io.IOException;
 import java.util.Arrays;
 import org.junit.Before;
 import org.junit.Test;
 import static org.mockito.Mockito.*;
 
 public class InitCommandHandlerTest {
+
+    private static final String PATH = "dummy";
+    private static final String MANIFEST_PATH = "dummy/.ideless";
 
     private SafeCommandHandler defaultHandler;
     private FileIO fileIO;
@@ -25,10 +29,9 @@ public class InitCommandHandlerTest {
     }
 
     @Test(expected = InvalidTemplateException.class)
-    public void shallThrowErrorWhenTemplateIsInvalid() throws Exception {
-        String invalidPath = "unknownTemplate";
-        when(fileIO.read(invalidPath)).thenReturn(null);
-        sut.handle(Arrays.asList(invalidPath));
+    public void shallThrowErrorWhenManifestCannotBeOpen() throws Exception {
+        when(fileIO.read(MANIFEST_PATH)).thenThrow(new IOException());
+        sut.handle(Arrays.asList(PATH));
     }
 
 }
