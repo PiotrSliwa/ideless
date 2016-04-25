@@ -52,11 +52,17 @@ public class InitCommandHandlerTest {
     }
 
     @Test
-    public void shallReadInitFiles() throws Exception {
+    public void shallReadInitFilesAndSaveThemToTarget() throws Exception {
+        String data1 = "siple data one";
+        String data2 = "siple data two";
         when(manifestReader.read(MANIFEST_PATH)).thenReturn(new Manifest(FILES));
+        when(fileIO.read(PATH + "/" + FILES.get(0))).thenReturn(data1);
+        when(fileIO.read(PATH + "/" + FILES.get(1))).thenReturn(data2);
         sut.handle(Arrays.asList(PATH));
         verify(fileIO).read(PATH + "/" + FILES.get(0));
         verify(fileIO).read(PATH + "/" + FILES.get(1));
+        verify(fileIO).write(FILES.get(0), data1);
+        verify(fileIO).write(FILES.get(1), data2);
     }
 
     @Test(expected = CannotFindFileException.class)

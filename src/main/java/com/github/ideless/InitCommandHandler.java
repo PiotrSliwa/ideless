@@ -25,8 +25,9 @@ public class InitCommandHandler implements CommandHandler {
         Manifest manifest = readManifest(parameters);
         for (String path : manifest.getInitFiles()) {
             try {
-                fileIO.read(parameters.get(0) + "/" + path);
+                String data = fileIO.read(parameters.get(0) + "/" + path);
                 System.out.println("Initializing file: " + path);
+                fileIO.write(path, data);
             }
             catch (IOException ex) {
                 throw new CannotFindFileException(path);
