@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -16,6 +17,7 @@ public class Runner {
 
     private final String workspacePath;
     private final String executablePath;
+    private final List<String> inputs = new ArrayList<>();
 
     public Runner(String workspacePath) {
         this.workspacePath = workspacePath;
@@ -29,11 +31,17 @@ public class Runner {
         return result + relativePath;
     }
 
+    public void addInput(String input) {
+        inputs.add(input + "\n");
+    }
+
     public String run(String args) throws ExecutableReturnedErrorException, RunnerException {
         try {
             ArrayList<String> command = new ArrayList<>(Arrays.asList("java", "-jar", executablePath));
             command.addAll(Arrays.asList(args.split(" ")));
             Process proc = new ProcessBuilder(command).directory(new File(workspacePath)).start();
+            for (String input : inputs)
+                proc.getOutputStream().write(input.getBytes());
             proc.waitFor();
 
             try (BufferedReader br = new BufferedReader(new InputStreamReader(proc.getErrorStream()))) {

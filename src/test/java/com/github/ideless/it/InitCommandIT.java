@@ -1,15 +1,16 @@
 package com.github.ideless.it;
 
-import com.github.ideless.running.ExecutableReturnedErrorException;
-import com.github.ideless.running.RunnerException;
 import com.github.ideless.running.SandboxManager;
 import java.io.IOException;
 import static org.hamcrest.CoreMatchers.startsWith;
 import org.junit.Assert;
-import org.junit.Test;
 import static org.junit.Assert.assertThat;
+import org.junit.Test;
 
 public class InitCommandIT {
+
+    private static final String FILE_NAME = "file1";
+    private static final String FILE_DATA = "some data";
 
     private SandboxManager initValid(String manifestData) throws IOException {
         StackTraceElement ste = Thread.currentThread().getStackTrace()[2];
@@ -21,57 +22,74 @@ public class InitCommandIT {
         return manager;
     }
 
+    private static String runInitCommand(SandboxManager manager) throws Exception {
+        return manager.getRunner().run("init " + manager.getTemplateDirName());
+    }
+
     @Test
-    public void lackOfTemplateParameter() throws ExecutableReturnedErrorException, RunnerException {
+    public void lackOfTemplateParameter() throws Exception {
         SandboxManager manager = new SandboxManager("InitCommandIT_lackOfTemplateParameter");
         String out = manager.getRunner().run("init");
         assertThat(out, startsWith("Usage: "));
     }
 
     @Test
-    public void absentTemplateDirectory() throws IOException, ExecutableReturnedErrorException, RunnerException {
+    public void absentTemplateDirectory() throws Exception {
         SandboxManager manager = new SandboxManager("InitCommandIT_absentTemplateDirectory");
         String out = manager.getRunner().run("init strangeTemplate");
         assertThat(out, startsWith("Error: Invalid ideless template directory ("));
     }
 
     @Test
-    public void absentManifestFile() throws ExecutableReturnedErrorException, RunnerException {
+    public void absentManifestFile() throws Exception {
         SandboxManager manager = new SandboxManager("InitCommandIT_absentManifestFile");
-        String out = manager.getRunner().run("init " + manager.getTemplateDirName());
+        String out = runInitCommand(manager);
         assertThat(out, startsWith("Error: Invalid ideless template directory ("));
     }
 
     @Test
-    public void invalidJsonAsManifestFile() throws ExecutableReturnedErrorException, RunnerException, IOException {
+    public void invalidJsonAsManifestFile() throws Exception{
         SandboxManager manager = initValid("invalid json");
-        String out = manager.getRunner().run("init " + manager.getTemplateDirName());
+        String out = runInitCommand(manager);
         assertThat(out, startsWith("Error: Invalid JSON ("));
     }
 
     @Test
-    public void noInitFilesInManifestFile() throws IOException, ExecutableReturnedErrorException, RunnerException {
+    public void noInitFilesInManifestFile() throws Exception {
         SandboxManager manager = initValid("{\"someField\":\"someValue\"}");
-        String out = manager.getRunner().run("init " + manager.getTemplateDirName());
+        String out = runInitCommand(manager);
         assertThat(out, startsWith("Error: Lack of 'initFiles' field"));
     }
 
     @Test
-    public void absentInitFile() throws IOException, ExecutableReturnedErrorException, RunnerException {
+    public void absentInitFile() throws Exception {
         SandboxManager manager = initValid("{\"initFiles\":[\"unknownFile\"]}");
-        String out = manager.getRunner().run("init " + manager.getTemplateDirName());
+        String out = runInitCommand(manager);
         assertThat(out, startsWith("Error: Cannot find file"));
     }
 
     @Test
-    public void shallCopyInitFiles() throws IOException, ExecutableReturnedErrorException, RunnerException {
-        String fileName = "file1";
-        String fileData = "some data";
-        SandboxManager manager = initValid("{\"initFiles\":[\"" + fileName + "\"]}");
-        manager.writeToTemplateDir(fileName, fileData);
-        String out = manager.getRunner().run("init " + manager.getTemplateDirName());
-        assertThat(out, startsWith("Initializing file: " + fileName));
-        Assert.assertEquals(fileData, manager.read(fileName));
+    public void shallCopyInitFiles() throws Exception {
+        SandboxManager manager = initValid("{\"initFiles\":[\"" + FILE_NAME + "\"]}");
+        manager.writeToTemplateDir(FILE_NAME, FILE_DATA);
+
+        String out = runInitCommand(manager);
+        assertThat(out, startsWith("Initializing file: " + FILE_NAME));
+        Assert.assertEquals(FILE_DATA, manager.read(FILE_NAME));
+    }
+
+    @Test
+    public void shallAskForPropertyIfOneDefined() throws Exception {
+        String propertyName = "prop_name";
+        String propertyDescription = "Some prop description.";
+
+        SandboxManager manager = initValid(
+                "{\"initFiles\":[\"" + FILE_NAME + "\"],\"properties\":[{\"name\":\"" +
+                propertyName + "\",\"description\":\"" + propertyDescription + "\"}]}");
+        manager.writeToTemplateDir(FILE_NAME, FILE_DATA);
+
+        String out = runInitCommand(manager);
+        assertThat(out, startsWith(propertyName + " (" + propertyDescription + ")"));
     }
 
 }

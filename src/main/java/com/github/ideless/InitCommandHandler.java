@@ -9,11 +9,13 @@ public class InitCommandHandler implements CommandHandler {
     private final SafeCommandHandler invalidParameterHandler;
     private final ManifestReader manifestReader;
     private final FileIO fileIO;
+    private final UserIO userIO;
 
-    public InitCommandHandler(SafeCommandHandler invalidParameterHandler, ManifestReader manifestReader, FileIO fileIO) {
+    public InitCommandHandler(SafeCommandHandler invalidParameterHandler, ManifestReader manifestReader, FileIO fileIO, UserIO userIO) {
         this.invalidParameterHandler = invalidParameterHandler;
         this.manifestReader = manifestReader;
         this.fileIO = fileIO;
+        this.userIO = userIO;
     }
 
     @Override
@@ -22,10 +24,32 @@ public class InitCommandHandler implements CommandHandler {
             invalidParameterHandler.handle(parameters);
             return;
         }
-        Manifest manifest = readManifest(parameters);
+        String templateDir = getTemplateDir(parameters);
+        Manifest manifest = readManifest(templateDir);
+        initProperties(manifest);
+        initFiles(manifest, templateDir);
+    }
+
+    private static String getTemplateDir(List<String> parameters) {
+        return parameters.get(0);
+    }
+
+    private void initProperties(Manifest manifest) {
+        if (manifest.getProperties() == null)
+            return;
+        manifest.getProperties().stream().forEach((property) -> {
+            askUserForProperty(property);
+        });
+    }
+
+    private void askUserForProperty(Manifest.Property property) {
+        userIO.print(property.getName() + " (" + property.getDescription() + "): ");
+    }
+
+    private void initFiles(Manifest manifest, String templateDir) throws CannotFindFileException {
         for (String path : manifest.getInitFiles()) {
             try {
-                String data = fileIO.read(parameters.get(0) + "/" + path);
+                String data = fileIO.read(templateDir + "/" + path);
                 System.out.println("Initializing file: " + path);
                 fileIO.write(path, data);
             }
@@ -35,9 +59,9 @@ public class InitCommandHandler implements CommandHandler {
         }
     }
 
-    private Manifest readManifest(List<String> parameters) throws Exception {
+    private Manifest readManifest(String templateDir) throws Exception {
         try {
-            Manifest manifest = manifestReader.read(parameters.get(0) + "/.ideless");
+            Manifest manifest = manifestReader.read(templateDir + "/.ideless");
             validate(manifest);
             return manifest;
         }

@@ -11,12 +11,15 @@ import static org.mockito.Mockito.*;
 public class InitCommandHandlerTest {
 
     private static final String PATH = "dummy";
-    private static final String MANIFEST_PATH = "dummy/.ideless";
+    private static final String MANIFEST_PATH = PATH + "/.ideless";
+    private static final String FILE = "file1";
     private static final List<String> FILES = Arrays.asList("file1", "file2");
+    private static final List<String> DATA = Arrays.asList("data one", "data two");
 
     private SafeCommandHandler defaultHandler;
     private ManifestReader manifestReader;
     private FileIO fileIO;
+    private UserIO userIO;
     private InitCommandHandler sut;
 
     @Before
@@ -24,7 +27,8 @@ public class InitCommandHandlerTest {
         defaultHandler = mock(SafeCommandHandler.class);
         manifestReader = mock(ManifestReader.class);
         fileIO = mock(FileIO.class);
-        sut = new InitCommandHandler(defaultHandler, manifestReader, fileIO);
+        userIO = mock(UserIO.class);
+        sut = new InitCommandHandler(defaultHandler, manifestReader, fileIO, userIO);
     }
 
     @Test
@@ -53,16 +57,16 @@ public class InitCommandHandlerTest {
 
     @Test
     public void shallReadInitFilesAndSaveThemToTarget() throws Exception {
-        String data1 = "siple data one";
-        String data2 = "siple data two";
         when(manifestReader.read(MANIFEST_PATH)).thenReturn(new Manifest(FILES));
-        when(fileIO.read(PATH + "/" + FILES.get(0))).thenReturn(data1);
-        when(fileIO.read(PATH + "/" + FILES.get(1))).thenReturn(data2);
+        when(fileIO.read(PATH + "/" + FILES.get(0))).thenReturn(DATA.get(0));
+        when(fileIO.read(PATH + "/" + FILES.get(1))).thenReturn(DATA.get(1));
+
         sut.handle(Arrays.asList(PATH));
+
         verify(fileIO).read(PATH + "/" + FILES.get(0));
         verify(fileIO).read(PATH + "/" + FILES.get(1));
-        verify(fileIO).write(FILES.get(0), data1);
-        verify(fileIO).write(FILES.get(1), data2);
+        verify(fileIO).write(FILES.get(0), DATA.get(0));
+        verify(fileIO).write(FILES.get(1), DATA.get(1));
     }
 
     @Test(expected = CannotFindFileException.class)
@@ -70,6 +74,17 @@ public class InitCommandHandlerTest {
         when(manifestReader.read(MANIFEST_PATH)).thenReturn(new Manifest(FILES));
         when(fileIO.read(Matchers.any())).thenThrow(new IOException());
         sut.handle(Arrays.asList(PATH));
+    }
+
+    @Test
+    public void shallAskUserForPropertyWhenManifestContainsOne() throws Exception {
+        Manifest.Property property = new Manifest.Property("propertyName", "propertyDescription");
+        when(manifestReader.read(MANIFEST_PATH)).thenReturn(new Manifest(Arrays.asList(FILE), Arrays.asList(property)));
+        when(fileIO.read(PATH + "/" + FILE)).thenReturn(DATA.get(0));
+
+        sut.handle(Arrays.asList(PATH));
+
+        verify(userIO).print(property.getName() + " (" + property.getDescription() + "): ");
     }
 
 }
