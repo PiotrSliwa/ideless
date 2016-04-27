@@ -1,7 +1,6 @@
 package com.github.ideless.init;
 
 import com.github.ideless.CommandHandler;
-import com.github.ideless.FileIO;
 import com.github.ideless.SafeCommandHandler;
 import com.github.ideless.UserIO;
 import com.google.gson.JsonSyntaxException;
@@ -12,14 +11,14 @@ public class InitCommandHandler implements CommandHandler {
 
     private final SafeCommandHandler invalidParameterHandler;
     private final ManifestReader manifestReader;
-    private final FileIO fileIO;
     private final UserIO userIO;
+    private final FileInitializer fileInitializer;
 
-    public InitCommandHandler(SafeCommandHandler invalidParameterHandler, ManifestReader manifestReader, FileIO fileIO, UserIO userIO) {
+    public InitCommandHandler(SafeCommandHandler invalidParameterHandler, ManifestReader manifestReader, UserIO userIO, FileInitializer fileInitializer) {
         this.invalidParameterHandler = invalidParameterHandler;
         this.manifestReader = manifestReader;
-        this.fileIO = fileIO;
         this.userIO = userIO;
+        this.fileInitializer = fileInitializer;
     }
 
     @Override
@@ -53,9 +52,8 @@ public class InitCommandHandler implements CommandHandler {
     private void initFiles(Manifest manifest, String templateDir) throws CannotFindFileException {
         for (String path : manifest.getInitFiles()) {
             try {
-                String data = fileIO.read(templateDir + "/" + path);
+                fileInitializer.initialize(templateDir + "/" + path, path);
                 userIO.println("Initializing file: " + path);
-                fileIO.write(path, data);
             }
             catch (IOException ex) {
                 throw new CannotFindFileException(path);

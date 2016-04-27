@@ -1,6 +1,5 @@
 package com.github.ideless.init;
 
-import com.github.ideless.FileIO;
 import com.github.ideless.SafeCommandHandler;
 import com.github.ideless.UserIO;
 import java.io.IOException;
@@ -17,12 +16,11 @@ public class InitCommandHandlerTest {
     private static final String MANIFEST_PATH = PATH + "/.ideless";
     private static final String FILE = "file1";
     private static final List<String> FILES = Arrays.asList("file1", "file2");
-    private static final List<String> DATA = Arrays.asList("data one", "data two");
 
     private SafeCommandHandler defaultHandler;
     private ManifestReader manifestReader;
-    private FileIO fileIO;
     private UserIO userIO;
+    private FileInitializer fileInitializer;
     private InitCommandHandler sut;
 
     private static String getFileInitMessage(String file) {
@@ -37,9 +35,9 @@ public class InitCommandHandlerTest {
     public void beforeTest() {
         defaultHandler = mock(SafeCommandHandler.class);
         manifestReader = mock(ManifestReader.class);
-        fileIO = mock(FileIO.class);
         userIO = mock(UserIO.class);
-        sut = new InitCommandHandler(defaultHandler, manifestReader, fileIO, userIO);
+        fileInitializer = mock(FileInitializer.class);
+        sut = new InitCommandHandler(defaultHandler, manifestReader, userIO, fileInitializer);
     }
 
     @Test
@@ -69,24 +67,20 @@ public class InitCommandHandlerTest {
     @Test
     public void shallReadInitFilesAndSaveThemToTarget() throws Exception {
         when(manifestReader.read(MANIFEST_PATH)).thenReturn(new Manifest(FILES));
-        when(fileIO.read(PATH + "/" + FILES.get(0))).thenReturn(DATA.get(0));
-        when(fileIO.read(PATH + "/" + FILES.get(1))).thenReturn(DATA.get(1));
 
         sut.handle(Arrays.asList(PATH));
 
-        verify(fileIO).read(PATH + "/" + FILES.get(0));
-        verify(fileIO).read(PATH + "/" + FILES.get(1));
-        verify(fileIO).write(FILES.get(0), DATA.get(0));
-        verify(fileIO).write(FILES.get(1), DATA.get(1));
+        verify(fileInitializer).initialize(PATH + "/" + FILES.get(0), FILES.get(0));
+        verify(fileInitializer).initialize(PATH + "/" + FILES.get(1), FILES.get(1));
 
         verify(userIO).println(getFileInitMessage(FILES.get(0)));
         verify(userIO).println(getFileInitMessage(FILES.get(1)));
     }
 
     @Test(expected = CannotFindFileException.class)
-    public void shallThrowErrorWhenCannotReadFile() throws Exception {
+    public void shallThrowErrorWhenInitializerReturnsIOException() throws Exception {
         when(manifestReader.read(MANIFEST_PATH)).thenReturn(new Manifest(FILES));
-        when(fileIO.read(Matchers.any())).thenThrow(new IOException());
+        doThrow(new IOException()).when(fileInitializer).initialize(Matchers.any(), Matchers.any());
         sut.handle(Arrays.asList(PATH));
     }
 
@@ -94,7 +88,6 @@ public class InitCommandHandlerTest {
     public void shallAskUserForPropertyWhenManifestContainsOne() throws Exception {
         Property property = new Property("propertyName", "propertyDescription");
         when(manifestReader.read(MANIFEST_PATH)).thenReturn(new Manifest(Arrays.asList(FILE), Arrays.asList(property)));
-        when(fileIO.read(PATH + "/" + FILE)).thenReturn(DATA.get(0));
 
         sut.handle(Arrays.asList(PATH));
 

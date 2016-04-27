@@ -1,7 +1,8 @@
 package com.github.ideless;
 
-import com.github.ideless.init.ManifestReader;
+import com.github.ideless.init.FileInitializer;
 import com.github.ideless.init.InitCommandHandler;
+import com.github.ideless.init.ManifestReader;
 import java.util.List;
 
 public class Ideless {
@@ -23,8 +24,9 @@ public class Ideless {
         FileIO fileIO = new FileIO();
         UserIO userIO = new UserIO();
         ManifestReader manifestReader = new ManifestReader(fileIO);
+        FileInitializer fileInitializer = new FileInitializer(fileIO);
         CommandDispatcher dispatcher = new CommandDispatcher(defaultHandler, errorHandler);
-        dispatcher.addHandler("init", new InitCommandHandler(defaultHandler, manifestReader, fileIO, userIO));
+        dispatcher.addHandler("init", new InitCommandHandler(defaultHandler, manifestReader, userIO, fileInitializer));
         dispatcher.dispatch(args);
 
     }
