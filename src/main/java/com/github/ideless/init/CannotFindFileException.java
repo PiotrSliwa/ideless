@@ -1,4 +1,4 @@
-package com.github.ideless;
+package com.github.ideless.init;
 
 public class CannotFindFileException extends Exception {
 

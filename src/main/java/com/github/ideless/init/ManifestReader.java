@@ -1,5 +1,6 @@
-package com.github.ideless;
+package com.github.ideless.init;
 
+import com.github.ideless.FileIO;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import java.io.IOException;

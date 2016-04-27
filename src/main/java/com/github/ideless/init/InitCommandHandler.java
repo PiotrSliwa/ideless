@@ -1,5 +1,9 @@
-package com.github.ideless;
+package com.github.ideless.init;
 
+import com.github.ideless.CommandHandler;
+import com.github.ideless.FileIO;
+import com.github.ideless.SafeCommandHandler;
+import com.github.ideless.UserIO;
 import com.google.gson.JsonSyntaxException;
 import java.io.IOException;
 import java.util.List;

@@ -1,4 +1,4 @@
-package com.github.ideless;
+package com.github.ideless.init;
 
 import java.util.List;
 

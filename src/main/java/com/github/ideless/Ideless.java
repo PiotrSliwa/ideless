@@ -1,5 +1,7 @@
 package com.github.ideless;
 
+import com.github.ideless.init.ManifestReader;
+import com.github.ideless.init.InitCommandHandler;
 import java.util.List;
 
 public class Ideless {

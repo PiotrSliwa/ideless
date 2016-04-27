@@ -1,5 +1,9 @@
-package com.github.ideless;
+package com.github.ideless.init;
 
+import com.github.ideless.FileIO;
+import com.github.ideless.SafeCommandHandler;
+import com.github.ideless.UserIO;
+import com.github.ideless.init.InitCommandHandler;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
