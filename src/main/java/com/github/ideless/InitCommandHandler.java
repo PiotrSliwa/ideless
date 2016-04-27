@@ -42,7 +42,7 @@ public class InitCommandHandler implements CommandHandler {
         });
     }
 
-    private void askUserForProperty(Manifest.Property property) {
+    private void askUserForProperty(Property property) {
         userIO.print(property.getName() + " (" + property.getDescription() + "): ");
     }
 

@@ -78,7 +78,7 @@ public class InitCommandHandlerTest {
 
     @Test
     public void shallAskUserForPropertyWhenManifestContainsOne() throws Exception {
-        Manifest.Property property = new Manifest.Property("propertyName", "propertyDescription");
+        Property property = new Property("propertyName", "propertyDescription");
         when(manifestReader.read(MANIFEST_PATH)).thenReturn(new Manifest(Arrays.asList(FILE), Arrays.asList(property)));
         when(fileIO.read(PATH + "/" + FILE)).thenReturn(DATA.get(0));
 
