@@ -3,7 +3,6 @@ package com.github.ideless.init;
 import com.github.ideless.FileIO;
 import com.github.ideless.SafeCommandHandler;
 import com.github.ideless.UserIO;
-import com.github.ideless.init.InitCommandHandler;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
@@ -25,6 +24,14 @@ public class InitCommandHandlerTest {
     private FileIO fileIO;
     private UserIO userIO;
     private InitCommandHandler sut;
+
+    private static String getFileInitMessage(String file) {
+        return "Initializing file: " + file;
+    }
+
+    private static String getPropertyQuestionMessage(Property property) {
+        return property.getName() + " (" + property.getDescription() + "): ";
+    }
 
     @Before
     public void beforeTest() {
@@ -71,6 +78,9 @@ public class InitCommandHandlerTest {
         verify(fileIO).read(PATH + "/" + FILES.get(1));
         verify(fileIO).write(FILES.get(0), DATA.get(0));
         verify(fileIO).write(FILES.get(1), DATA.get(1));
+
+        verify(userIO).println(getFileInitMessage(FILES.get(0)));
+        verify(userIO).println(getFileInitMessage(FILES.get(1)));
     }
 
     @Test(expected = CannotFindFileException.class)
@@ -88,7 +98,7 @@ public class InitCommandHandlerTest {
 
         sut.handle(Arrays.asList(PATH));
 
-        verify(userIO).print(property.getName() + " (" + property.getDescription() + "): ");
+        verify(userIO).print(getPropertyQuestionMessage(property));
     }
 
 }

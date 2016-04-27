@@ -54,7 +54,7 @@ public class InitCommandHandler implements CommandHandler {
         for (String path : manifest.getInitFiles()) {
             try {
                 String data = fileIO.read(templateDir + "/" + path);
-                System.out.println("Initializing file: " + path);
+                userIO.println("Initializing file: " + path);
                 fileIO.write(path, data);
             }
             catch (IOException ex) {

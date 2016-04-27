@@ -12,6 +12,10 @@ public class UserIO {
         System.out.print(message);
     }
 
+    public void println(String message) {
+        System.out.println(message);
+    }
+
     public String read() throws IOException {
         return bufferedReader.readLine();
     }
