@@ -11,6 +11,8 @@ public class InitCommandIT {
 
     private static final String FILE_NAME = "file1";
     private static final String FILE_DATA = "some data";
+    private static final String BEFORE_EXPR = "something";
+    private static final String AFTER_EXPR = "else";
 
     private SandboxManager initValid(String manifestData) throws IOException {
         StackTraceElement ste = Thread.currentThread().getStackTrace()[2];
@@ -90,6 +92,53 @@ public class InitCommandIT {
 
         String out = runInitCommand(manager);
         assertThat(out, startsWith(propertyName + " (" + propertyDescription + ")"));
+    }
+
+    @Test
+    public void shallReturnErrorWhenEmptyExpressionFoundInTemplate() throws Exception {
+        SandboxManager manager = initValid(
+                "{\"initFiles\":[\"" + FILE_NAME + "\"]}");
+        manager.writeToTemplateDir(FILE_NAME, BEFORE_EXPR + "{{ }}" + AFTER_EXPR);
+
+        String out = runInitCommand(manager);
+        assertThat(out, startsWith("Error: Empty expression found in template file"));
+    }
+
+    @Test
+    public void shallReturnErrorWhenErrorousExpressionFoundInTemplate() throws Exception {
+        String unreadableExpression = "unreadable expression";
+
+        SandboxManager manager = initValid(
+                "{\"initFiles\":[\"" + FILE_NAME + "\"]}");
+        manager.writeToTemplateDir(FILE_NAME, BEFORE_EXPR + "{{ " + unreadableExpression + " }}" + AFTER_EXPR);
+
+        String out = runInitCommand(manager);
+        assertThat(out, startsWith("Error: Unreadable expression: '" + unreadableExpression + "'"));
+    }
+
+    @Test
+    public void shallReplaceStringExpressionWithTheStringInTemplate() throws Exception {
+        String dummyString = "dummy string";
+
+        SandboxManager manager = initValid(
+                "{\"initFiles\":[\"" + FILE_NAME + "\"]}");
+        manager.writeToTemplateDir(FILE_NAME, BEFORE_EXPR + "{{ \"" + dummyString + "\" }}" + AFTER_EXPR);
+
+        String out = runInitCommand(manager);
+        assertThat(out, startsWith("Initializing file: " + FILE_NAME));
+        Assert.assertEquals(BEFORE_EXPR + dummyString + AFTER_EXPR, manager.read(FILE_NAME));
+    }
+
+    @Test
+    public void shallReturnErrorWhenUndefinedVariableUsedInExpression() throws Exception {
+        String unknownVariable = "unknownVariable";
+
+        SandboxManager manager = initValid(
+                "{\"initFiles\":[\"" + FILE_NAME + "\"]}");
+        manager.writeToTemplateDir(FILE_NAME, BEFORE_EXPR + "{{ $" + unknownVariable + " }}" + AFTER_EXPR);
+
+        String out = runInitCommand(manager);
+        assertThat(out, startsWith("Error: Undefined variable: '" + unknownVariable + "'"));
     }
 
 }

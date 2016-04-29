@@ -49,7 +49,7 @@ public class InitCommandHandler implements CommandHandler {
         userIO.print(property.getName() + " (" + property.getDescription() + "): ");
     }
 
-    private void initFiles(Manifest manifest, String templateDir) throws CannotFindFileException {
+    private void initFiles(Manifest manifest, String templateDir) throws Exception {
         for (String path : manifest.getInitFiles()) {
             try {
                 fileInitializer.initialize(templateDir + "/" + path, path);
