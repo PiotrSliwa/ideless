@@ -21,6 +21,7 @@ public class InitCommandHandlerTest {
     private ManifestReader manifestReader;
     private UserIO userIO;
     private FileInitializer fileInitializer;
+    private VariableRepository variableRepository;
     private InitCommandHandler sut;
 
     private static String getFileInitMessage(String file) {
@@ -37,7 +38,8 @@ public class InitCommandHandlerTest {
         manifestReader = mock(ManifestReader.class);
         userIO = mock(UserIO.class);
         fileInitializer = mock(FileInitializer.class);
-        sut = new InitCommandHandler(defaultHandler, manifestReader, userIO, fileInitializer);
+        variableRepository = mock(VariableRepository.class);
+        sut = new InitCommandHandler(defaultHandler, manifestReader, userIO, fileInitializer, variableRepository);
     }
 
     @Test
@@ -87,11 +89,14 @@ public class InitCommandHandlerTest {
     @Test
     public void shallAskUserForPropertyWhenManifestContainsOne() throws Exception {
         Property property = new Property("propertyName", "propertyDescription");
+        final String userValue = "user-defined value";
         when(manifestReader.read(MANIFEST_PATH)).thenReturn(new Manifest(Arrays.asList(FILE), Arrays.asList(property)));
+        when(userIO.read()).thenReturn(userValue);
 
         sut.handle(Arrays.asList(PATH));
 
         verify(userIO).print(getPropertyQuestionMessage(property));
+        verify(variableRepository).setProperty(property.getName(), userValue);
     }
 
 }

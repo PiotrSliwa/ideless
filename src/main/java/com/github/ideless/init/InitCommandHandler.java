@@ -13,12 +13,19 @@ public class InitCommandHandler implements CommandHandler {
     private final ManifestReader manifestReader;
     private final UserIO userIO;
     private final FileInitializer fileInitializer;
+    private final VariableRepository variableRepository;
 
-    public InitCommandHandler(SafeCommandHandler invalidParameterHandler, ManifestReader manifestReader, UserIO userIO, FileInitializer fileInitializer) {
+    public InitCommandHandler(
+            SafeCommandHandler invalidParameterHandler,
+            ManifestReader manifestReader,
+            UserIO userIO,
+            FileInitializer fileInitializer,
+            VariableRepository variableRepository) {
         this.invalidParameterHandler = invalidParameterHandler;
         this.manifestReader = manifestReader;
         this.userIO = userIO;
         this.fileInitializer = fileInitializer;
+        this.variableRepository = variableRepository;
     }
 
     @Override
@@ -37,16 +44,18 @@ public class InitCommandHandler implements CommandHandler {
         return parameters.get(0);
     }
 
-    private void initProperties(Manifest manifest) {
+    private void initProperties(Manifest manifest) throws IOException {
         if (manifest.getProperties() == null)
             return;
-        manifest.getProperties().stream().forEach((property) -> {
-            askUserForProperty(property);
-        });
+        for (Property property : manifest.getProperties()) {
+            String userValue = askUserForProperty(property);
+            variableRepository.setProperty(property.getName(), userValue);
+        }
     }
 
-    private void askUserForProperty(Property property) {
+    private String askUserForProperty(Property property) throws IOException {
         userIO.print(property.getName() + " (" + property.getDescription() + "): ");
+        return userIO.read();
     }
 
     private void initFiles(Manifest manifest, String templateDir) throws Exception {

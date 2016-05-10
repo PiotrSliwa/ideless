@@ -1,9 +1,12 @@
 package com.github.ideless.running;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -40,8 +43,7 @@ public class Runner {
             ArrayList<String> command = new ArrayList<>(Arrays.asList("java", "-jar", executablePath));
             command.addAll(Arrays.asList(args.split(" ")));
             Process proc = new ProcessBuilder(command).directory(new File(workspacePath)).start();
-            for (String input : inputs)
-                proc.getOutputStream().write(input.getBytes());
+            writeInputsToStream(proc.getOutputStream());
             proc.waitFor();
 
             try (BufferedReader br = new BufferedReader(new InputStreamReader(proc.getErrorStream()))) {
@@ -58,5 +60,14 @@ public class Runner {
             Logger.getLogger(Runner.class.getName()).log(Level.SEVERE, null, ex);
             throw new RunnerException();
         }
+    }
+
+    private void writeInputsToStream(OutputStream outputStream) throws IOException {
+        BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(outputStream));
+        for (String input : inputs) {
+            bw.write(input);
+            bw.newLine();
+        }
+        bw.flush();
     }
 }

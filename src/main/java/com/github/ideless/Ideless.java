@@ -3,9 +3,9 @@ package com.github.ideless;
 import com.github.ideless.init.FileInitializer;
 import com.github.ideless.init.InitCommandHandler;
 import com.github.ideless.init.ManifestReader;
+import com.github.ideless.init.VariableRepository;
 import com.github.ideless.processors.ContentProcessor;
 import com.github.ideless.processors.ExpressionProcessor;
-import com.github.ideless.processors.VariableGetter;
 import com.github.ideless.processors.VariableProcessor;
 import java.util.List;
 
@@ -25,18 +25,17 @@ public class Ideless {
             System.out.println("Error: " + arguments.get(0));
         };
 
-        /* Temporary */ VariableGetter variableGetter = (String variable) -> null;
-
         FileIO fileIO = new FileIO();
         UserIO userIO = new UserIO();
         JsonIO jsonIO = new JsonIO();
-        VariableProcessor variableProcessor = new VariableProcessor(variableGetter, jsonIO);
+        VariableRepository variableRepository = new VariableRepository();
+        VariableProcessor variableProcessor = new VariableProcessor(variableRepository, jsonIO);
         ExpressionProcessor expressionProcessor = new ExpressionProcessor(variableProcessor);
         ContentProcessor contentProcessor = new ContentProcessor(expressionProcessor);
         ManifestReader manifestReader = new ManifestReader(fileIO);
         FileInitializer fileInitializer = new FileInitializer(fileIO, contentProcessor);
         CommandDispatcher dispatcher = new CommandDispatcher(defaultHandler, errorHandler);
-        dispatcher.addHandler("init", new InitCommandHandler(defaultHandler, manifestReader, userIO, fileInitializer));
+        dispatcher.addHandler("init", new InitCommandHandler(defaultHandler, manifestReader, userIO, fileInitializer, variableRepository));
         dispatcher.dispatch(args);
 
     }

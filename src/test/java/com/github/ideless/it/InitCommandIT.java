@@ -2,6 +2,7 @@ package com.github.ideless.it;
 
 import com.github.ideless.running.SandboxManager;
 import java.io.IOException;
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.startsWith;
 import org.junit.Assert;
 import static org.junit.Assert.assertThat;
@@ -89,6 +90,7 @@ public class InitCommandIT {
                 "{\"initFiles\":[\"" + FILE_NAME + "\"],\"properties\":[{\"name\":\"" +
                 propertyName + "\",\"description\":\"" + propertyDescription + "\"}]}");
         manager.writeToTemplateDir(FILE_NAME, FILE_DATA);
+        manager.getRunner().addInput("dummy");
 
         String out = runInitCommand(manager);
         assertThat(out, startsWith(propertyName + " (" + propertyDescription + ")"));
@@ -139,6 +141,23 @@ public class InitCommandIT {
 
         String out = runInitCommand(manager);
         assertThat(out, startsWith("Error: Undefined variable: '" + unknownVariable + "'"));
+    }
+
+    @Test
+    public void shallReplaceExpressionWithPropertyWithDefaultExpressionConfiguration() throws Exception {
+        String propertyName = "prop_name";
+        String propertyDescription = "Some prop description.";
+        String userValue = "DUMMY";
+
+        SandboxManager manager = initValid(
+                "{\"initFiles\":[\"" + FILE_NAME + "\"],\"properties\":[{\"name\":\"" +
+                propertyName + "\",\"description\":\"" + propertyDescription + "\"}]}");
+        manager.writeToTemplateDir(FILE_NAME, BEFORE_EXPR + "{{ $properties." + propertyName + " }}" + AFTER_EXPR);
+        manager.getRunner().addInput(userValue);
+
+        String out = runInitCommand(manager);
+        assertThat(out, containsString("Initializing file: " + FILE_NAME));
+        Assert.assertEquals(BEFORE_EXPR + userValue + AFTER_EXPR, manager.read(FILE_NAME));
     }
 
 }
