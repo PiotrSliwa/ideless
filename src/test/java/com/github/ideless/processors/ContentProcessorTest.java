@@ -1,13 +1,13 @@
 package com.github.ideless.processors;
 
-import com.github.ideless.processors.ContentProcessor;
-import com.github.ideless.processors.ExpressionProcessor;
 import static org.junit.Assert.*;
 import org.junit.Before;
 import org.junit.Test;
 import static org.mockito.Mockito.*;
 
 public class ContentProcessorTest {
+
+    private static final String EXPR = "some expression";
 
     private static String createExpression(String expressionContent) {
         return "{{" + expressionContent + "}}";
@@ -33,17 +33,15 @@ public class ContentProcessorTest {
 
     @Test
     public void shallReturnUntouchedStringWhenItDoesNotContainAnyExpression() throws Exception {
-        String dummy = "dummy";
-        assertEquals(dummy, sut.process(dummy));
+        assertEquals(EXPR, sut.process(EXPR));
     }
 
     @Test
     public void shallDelegateExpressionToExpressionProcessorAndReplaceOccurenceWithTheReturnedValue() throws Exception {
-        String expr = "some expression";
         String result = "result";
-        when(expressionProcessor.process(expr)).thenReturn(result);
+        when(expressionProcessor.process(EXPR)).thenReturn(result);
 
-        assertEquals(createSurroundedText(result), sut.process(createSurroundedText(createExpression(expr))));
+        assertEquals(createSurroundedText(result), sut.process(createSurroundedText(createExpression(EXPR))));
     }
 
     @Test
@@ -56,6 +54,13 @@ public class ContentProcessorTest {
         String expectedOutput = createSurroundedText(results[0]) + createSurroundedText(results[1]);
 
         assertEquals(expectedOutput, sut.process(input));
+    }
+
+    @Test
+    public void shallReturnUntouchedStringWhenItIsPrecededByEscapeChar() throws Exception {
+        final String escapeChar = "\\";
+        final String input = createSurroundedText(escapeChar + createExpression(EXPR));
+        assertEquals(input, sut.process(input));
     }
 
 }

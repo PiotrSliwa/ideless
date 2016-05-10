@@ -5,7 +5,7 @@ import java.util.regex.Pattern;
 
 public class ContentProcessor {
 
-    private static final Pattern PATTERN = Pattern.compile("\\{\\{(.+?)\\}\\}");
+    private static final Pattern PATTERN = Pattern.compile("(?<!\\\\)\\{\\{(.+?)\\}\\}");
 
     private final ExpressionProcessor expressionProcessor;
 

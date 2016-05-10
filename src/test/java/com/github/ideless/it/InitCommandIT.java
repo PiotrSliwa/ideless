@@ -14,6 +14,10 @@ public class InitCommandIT {
     private static final String FILE_DATA = "some data";
     private static final String BEFORE_EXPR = "something";
     private static final String AFTER_EXPR = "else";
+    private static final String PROPERTY_NAME = "prop_name";
+    private static final String PROPERTY_DESCRIPTION = "Some prop description.";
+    private static final String USER_VALUE = "DUMMY";
+
 
     private SandboxManager initValid(String manifestData) throws IOException {
         StackTraceElement ste = Thread.currentThread().getStackTrace()[2];
@@ -145,19 +149,30 @@ public class InitCommandIT {
 
     @Test
     public void shallReplaceExpressionWithPropertyWithDefaultExpressionConfiguration() throws Exception {
-        String propertyName = "prop_name";
-        String propertyDescription = "Some prop description.";
-        String userValue = "DUMMY";
-
         SandboxManager manager = initValid(
                 "{\"initFiles\":[\"" + FILE_NAME + "\"],\"properties\":[{\"name\":\"" +
-                propertyName + "\",\"description\":\"" + propertyDescription + "\"}]}");
-        manager.writeToTemplateDir(FILE_NAME, BEFORE_EXPR + "{{ $properties." + propertyName + " }}" + AFTER_EXPR);
-        manager.getRunner().addInput(userValue);
+                PROPERTY_NAME + "\",\"description\":\"" + PROPERTY_DESCRIPTION + "\"}]}");
+        manager.writeToTemplateDir(FILE_NAME, BEFORE_EXPR + "{{ $properties." + PROPERTY_NAME + " }}" + AFTER_EXPR);
+        manager.getRunner().addInput(USER_VALUE);
 
         String out = runInitCommand(manager);
         assertThat(out, containsString("Initializing file: " + FILE_NAME));
-        Assert.assertEquals(BEFORE_EXPR + userValue + AFTER_EXPR, manager.read(FILE_NAME));
+        Assert.assertEquals(BEFORE_EXPR + USER_VALUE + AFTER_EXPR, manager.read(FILE_NAME));
+    }
+
+    @Test
+    public void shallNotReplaceEscapedExpressionWithDefaultExpressionConfiguration() throws Exception {
+        final String template = BEFORE_EXPR + "\\{{ $properties." + PROPERTY_NAME + " }}" + AFTER_EXPR;
+
+        SandboxManager manager = initValid(
+                "{\"initFiles\":[\"" + FILE_NAME + "\"],\"properties\":[{\"name\":\"" +
+                PROPERTY_NAME + "\",\"description\":\"" + PROPERTY_DESCRIPTION + "\"}]}");
+        manager.writeToTemplateDir(FILE_NAME, template);
+        manager.getRunner().addInput(USER_VALUE);
+
+        String out = runInitCommand(manager);
+        assertThat(out, containsString("Initializing file: " + FILE_NAME));
+        Assert.assertEquals(template, manager.read(FILE_NAME));
     }
 
 }
