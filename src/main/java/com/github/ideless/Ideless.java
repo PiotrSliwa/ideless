@@ -5,8 +5,8 @@ import com.github.ideless.init.InitCommandHandler;
 import com.github.ideless.init.ManifestReader;
 import com.github.ideless.processors.ContentProcessor;
 import com.github.ideless.processors.ExpressionProcessor;
+import com.github.ideless.processors.VariableGetter;
 import com.github.ideless.processors.VariableProcessor;
-import com.github.ideless.processors.VariableRepository;
 import java.util.List;
 
 public class Ideless {
@@ -25,12 +25,12 @@ public class Ideless {
             System.out.println("Error: " + arguments.get(0));
         };
 
-        /* Temporary */ VariableRepository variableRepository = (String variable) -> null;
+        /* Temporary */ VariableGetter variableGetter = (String variable) -> null;
 
         FileIO fileIO = new FileIO();
         UserIO userIO = new UserIO();
         JsonIO jsonIO = new JsonIO();
-        VariableProcessor variableProcessor = new VariableProcessor(variableRepository, jsonIO);
+        VariableProcessor variableProcessor = new VariableProcessor(variableGetter, jsonIO);
         ExpressionProcessor expressionProcessor = new ExpressionProcessor(variableProcessor);
         ContentProcessor contentProcessor = new ContentProcessor(expressionProcessor);
         ManifestReader manifestReader = new ManifestReader(fileIO);

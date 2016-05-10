@@ -1,5 +1,5 @@
 package com.github.ideless.processors;
 
-public interface VariableRepository {
+public interface VariableGetter {
     public Object get(String variable);
 }

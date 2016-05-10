@@ -8,15 +8,15 @@ import static org.mockito.Mockito.*;
 
 public class VariableProcessorTest {
 
-    private VariableRepository variableRepository;
+    private VariableGetter variableGetter;
     private JsonIO jsonIO;
     private VariableProcessor sut;
 
     @Before
     public void beforeTest() {
-        variableRepository = mock(VariableRepository.class);
+        variableGetter = mock(VariableGetter.class);
         jsonIO = mock(JsonIO.class);
-        sut = new VariableProcessor(variableRepository, jsonIO);
+        sut = new VariableProcessor(variableGetter, jsonIO);
     }
 
     @Test(expected = EmptyVariableNameException.class)
@@ -35,11 +35,11 @@ public class VariableProcessorTest {
     }
 
     @Test
-    public void shallReturnJsonFromWhateverVariableRepositoryReturns() throws Exception {
+    public void shallReturnJsonFromWhateverVariableGetterReturns() throws Exception {
         final String variable = "dummyVariable";
         final int value = 42;
         final String json = "json value";
-        when(variableRepository.get(variable)).thenReturn(value);
+        when(variableGetter.get(variable)).thenReturn(value);
         when(jsonIO.toJson(value)).thenReturn(json);
         assertEquals(json, sut.process(variable));
     }
