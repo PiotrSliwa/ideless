@@ -1,14 +1,21 @@
 package com.github.ideless.it;
 
 import com.github.ideless.running.SandboxManager;
+import com.google.gson.Gson;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.startsWith;
 import org.junit.Assert;
 import static org.junit.Assert.assertThat;
+import org.junit.Before;
 import org.junit.Test;
 
 public class InitCommandIT {
+
+    private static final Gson GSON = new Gson();
 
     private static final String FILE_NAME = "file1";
     private static final String FILE_DATA = "some data";
@@ -18,6 +25,8 @@ public class InitCommandIT {
     private static final String PROPERTY_DESCRIPTION = "Some prop description.";
     private static final String USER_VALUE = "DUMMY";
 
+    private Map<String, Object> manifestFile;
+    private Map<String, Object> properties;
 
     private SandboxManager initValid(String manifestData) throws IOException {
         StackTraceElement ste = Thread.currentThread().getStackTrace()[2];
@@ -29,8 +38,18 @@ public class InitCommandIT {
         return manager;
     }
 
+    private SandboxManager initValid(Map<String, Object> manifestData) throws IOException {
+        return initValid(GSON.toJson(manifestData));
+    }
+
     private static String runInitCommand(SandboxManager manager) throws Exception {
         return manager.getRunner().run("init " + manager.getTemplateDirName());
+    }
+
+    @Before
+    public void beforeTest() {
+        manifestFile = new HashMap<>();
+        properties = new HashMap<>();
     }
 
     @Test
@@ -63,21 +82,24 @@ public class InitCommandIT {
 
     @Test
     public void noInitFilesInManifestFile() throws Exception {
-        SandboxManager manager = initValid("{\"someField\":\"someValue\"}");
+        manifestFile.put("someField", Arrays.asList("someValue"));
+        SandboxManager manager = initValid(manifestFile);
         String out = runInitCommand(manager);
         assertThat(out, startsWith("Error: Lack of 'initFiles' field"));
     }
 
     @Test
     public void absentInitFile() throws Exception {
-        SandboxManager manager = initValid("{\"initFiles\":[\"unknownFile\"]}");
+        manifestFile.put("initFiles", Arrays.asList("unknownFile"));
+        SandboxManager manager = initValid(manifestFile);
         String out = runInitCommand(manager);
         assertThat(out, startsWith("Error: Cannot find file"));
     }
 
     @Test
     public void shallCopyInitFiles() throws Exception {
-        SandboxManager manager = initValid("{\"initFiles\":[\"" + FILE_NAME + "\"]}");
+        manifestFile.put("initFiles", Arrays.asList(FILE_NAME));
+        SandboxManager manager = initValid(manifestFile);
         manager.writeToTemplateDir(FILE_NAME, FILE_DATA);
 
         String out = runInitCommand(manager);
@@ -87,23 +109,24 @@ public class InitCommandIT {
 
     @Test
     public void shallAskForPropertyIfOneDefined() throws Exception {
-        String propertyName = "prop_name";
-        String propertyDescription = "Some prop description.";
+        properties.put("name", PROPERTY_NAME);
+        properties.put("description", PROPERTY_DESCRIPTION);
+        manifestFile.put("properties", Arrays.asList(properties));
+        manifestFile.put("initFiles", Arrays.asList(FILE_NAME));
+        SandboxManager manager = initValid(manifestFile);
 
-        SandboxManager manager = initValid(
-                "{\"initFiles\":[\"" + FILE_NAME + "\"],\"properties\":[{\"name\":\"" +
-                propertyName + "\",\"description\":\"" + propertyDescription + "\"}]}");
         manager.writeToTemplateDir(FILE_NAME, FILE_DATA);
         manager.getRunner().addInput("dummy");
 
         String out = runInitCommand(manager);
-        assertThat(out, startsWith(propertyName + " (" + propertyDescription + ")"));
+        assertThat(out, startsWith(PROPERTY_NAME + " (" + PROPERTY_DESCRIPTION + ")"));
     }
 
     @Test
     public void shallReturnErrorWhenEmptyExpressionFoundInTemplate() throws Exception {
-        SandboxManager manager = initValid(
-                "{\"initFiles\":[\"" + FILE_NAME + "\"]}");
+        manifestFile.put("initFiles", Arrays.asList(FILE_NAME));
+        SandboxManager manager = initValid(manifestFile);
+
         manager.writeToTemplateDir(FILE_NAME, BEFORE_EXPR + "{{ }}" + AFTER_EXPR);
 
         String out = runInitCommand(manager);
@@ -112,10 +135,10 @@ public class InitCommandIT {
 
     @Test
     public void shallReturnErrorWhenErrorousExpressionFoundInTemplate() throws Exception {
-        String unreadableExpression = "unreadable expression";
+        manifestFile.put("initFiles", Arrays.asList(FILE_NAME));
+        SandboxManager manager = initValid(manifestFile);
 
-        SandboxManager manager = initValid(
-                "{\"initFiles\":[\"" + FILE_NAME + "\"]}");
+        String unreadableExpression = "unreadable expression";
         manager.writeToTemplateDir(FILE_NAME, BEFORE_EXPR + "{{ " + unreadableExpression + " }}" + AFTER_EXPR);
 
         String out = runInitCommand(manager);
@@ -124,10 +147,10 @@ public class InitCommandIT {
 
     @Test
     public void shallReplaceStringExpressionWithTheStringInTemplate() throws Exception {
-        String dummyString = "dummy string";
+        manifestFile.put("initFiles", Arrays.asList(FILE_NAME));
+        SandboxManager manager = initValid(manifestFile);
 
-        SandboxManager manager = initValid(
-                "{\"initFiles\":[\"" + FILE_NAME + "\"]}");
+        String dummyString = "dummy string";
         manager.writeToTemplateDir(FILE_NAME, BEFORE_EXPR + "{{ \"" + dummyString + "\" }}" + AFTER_EXPR);
 
         String out = runInitCommand(manager);
@@ -137,10 +160,10 @@ public class InitCommandIT {
 
     @Test
     public void shallReturnErrorWhenUndefinedVariableUsedInExpression() throws Exception {
-        String unknownVariable = "unknownVariable";
+        manifestFile.put("initFiles", Arrays.asList(FILE_NAME));
+        SandboxManager manager = initValid(manifestFile);
 
-        SandboxManager manager = initValid(
-                "{\"initFiles\":[\"" + FILE_NAME + "\"]}");
+        String unknownVariable = "unknownVariable";
         manager.writeToTemplateDir(FILE_NAME, BEFORE_EXPR + "{{ $" + unknownVariable + " }}" + AFTER_EXPR);
 
         String out = runInitCommand(manager);
@@ -149,9 +172,12 @@ public class InitCommandIT {
 
     @Test
     public void shallReplaceExpressionWithPropertyWithDefaultExpressionConfiguration() throws Exception {
-        SandboxManager manager = initValid(
-                "{\"initFiles\":[\"" + FILE_NAME + "\"],\"properties\":[{\"name\":\"" +
-                PROPERTY_NAME + "\",\"description\":\"" + PROPERTY_DESCRIPTION + "\"}]}");
+        properties.put("name", PROPERTY_NAME);
+        properties.put("description", PROPERTY_DESCRIPTION);
+        manifestFile.put("properties", Arrays.asList(properties));
+        manifestFile.put("initFiles", Arrays.asList(FILE_NAME));
+        SandboxManager manager = initValid(manifestFile);
+
         manager.writeToTemplateDir(FILE_NAME, BEFORE_EXPR + "{{ $properties." + PROPERTY_NAME + " }}" + AFTER_EXPR);
         manager.getRunner().addInput(USER_VALUE);
 
@@ -164,9 +190,12 @@ public class InitCommandIT {
     public void shallNotReplaceEscapedExpressionWithDefaultExpressionConfiguration() throws Exception {
         final String template = BEFORE_EXPR + "\\{{ $properties." + PROPERTY_NAME + " }}" + AFTER_EXPR;
 
-        SandboxManager manager = initValid(
-                "{\"initFiles\":[\"" + FILE_NAME + "\"],\"properties\":[{\"name\":\"" +
-                PROPERTY_NAME + "\",\"description\":\"" + PROPERTY_DESCRIPTION + "\"}]}");
+        properties.put("name", PROPERTY_NAME);
+        properties.put("description", PROPERTY_DESCRIPTION);
+        manifestFile.put("properties", Arrays.asList(properties));
+        manifestFile.put("initFiles", Arrays.asList(FILE_NAME));
+        SandboxManager manager = initValid(manifestFile);
+
         manager.writeToTemplateDir(FILE_NAME, template);
         manager.getRunner().addInput(USER_VALUE);
 
@@ -177,9 +206,10 @@ public class InitCommandIT {
 
     @Test
     public void shallReturnErrorWhenInsufficientElementsGivenInExpressionFormat() throws Exception {
-        SandboxManager manager = initValid(
-                "{\"initFiles\":[\"" + FILE_NAME + "\"],\"expressionFormat\":[\"1\"],\"properties\":[{\"name\":\"" +
-                PROPERTY_NAME + "\",\"description\":\"" + PROPERTY_DESCRIPTION + "\"}]}");
+        manifestFile.put("initFiles", Arrays.asList(FILE_NAME));
+        manifestFile.put("expressionFormat", Arrays.asList("1"));
+        SandboxManager manager = initValid(manifestFile);
+
         manager.writeToTemplateDir(FILE_NAME, FILE_DATA);
         manager.getRunner().addInput(USER_VALUE);
 
@@ -189,9 +219,13 @@ public class InitCommandIT {
 
     @Test
     public void shallReplaceExpressionWithPropertyWithUserDefinedExpressionFormat() throws Exception {
-        SandboxManager manager = initValid(
-                "{\"initFiles\":[\"" + FILE_NAME + "\"],\"expressionFormat\":[\"<\",\">\",\"\\\\\"],\"properties\":[{\"name\":\"" +
-                PROPERTY_NAME + "\",\"description\":\"" + PROPERTY_DESCRIPTION + "\"}]}");
+        properties.put("name", PROPERTY_NAME);
+        properties.put("description", PROPERTY_DESCRIPTION);
+        manifestFile.put("properties", Arrays.asList(properties));
+        manifestFile.put("initFiles", Arrays.asList(FILE_NAME));
+        manifestFile.put("expressionFormat", Arrays.asList("<", ">", "\\"));
+        SandboxManager manager = initValid(manifestFile);
+
         manager.writeToTemplateDir(FILE_NAME, BEFORE_EXPR + "< $properties." + PROPERTY_NAME + " >" + AFTER_EXPR);
         manager.getRunner().addInput(USER_VALUE);
 
