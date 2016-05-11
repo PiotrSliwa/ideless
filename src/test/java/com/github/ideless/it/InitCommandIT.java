@@ -28,8 +28,8 @@ public class InitCommandIT {
     private Map<String, Object> manifestFile;
     private Map<String, Object> properties;
 
-    private SandboxManager initValid(String manifestData) throws IOException {
-        StackTraceElement ste = Thread.currentThread().getStackTrace()[2];
+    private SandboxManager initValid(String manifestData, int stackElem) throws IOException {
+        StackTraceElement ste = Thread.currentThread().getStackTrace()[stackElem];
         String[] classElems = ste.getClassName().split("\\.");
         String suiteName = classElems[classElems.length - 1];
         String testName = ste.getMethodName();
@@ -38,8 +38,12 @@ public class InitCommandIT {
         return manager;
     }
 
+    private SandboxManager initValid(String manifestData) throws IOException {
+        return initValid(GSON.toJson(manifestData), 3);
+    }
+
     private SandboxManager initValid(Map<String, Object> manifestData) throws IOException {
-        return initValid(GSON.toJson(manifestData));
+        return initValid(GSON.toJson(manifestData), 3);
     }
 
     private static String runInitCommand(SandboxManager manager) throws Exception {
