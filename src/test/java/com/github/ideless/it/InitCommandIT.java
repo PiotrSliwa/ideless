@@ -241,11 +241,42 @@ public class InitCommandIT {
     }
 
     @Test
-    public void shallPutContentInNewDirectoryIfOneSpecified() throws Exception {
+    public void shallPutContentInNewDirectory() throws Exception {
         String directory = "directory";
         manifestFile.put("initFiles", Arrays.asList(FILE_NAME));
         manifestFile.put("directory", directory);
         SandboxManager manager = initValid(manifestFile);
+        manager.writeToTemplateDir(FILE_NAME, FILE_DATA);
+
+        String expectedTargetFile = directory + "/" + FILE_NAME;
+        String out = runInitCommand(manager);
+        assertThat(out, containsString("Initializing file: " + expectedTargetFile));
+        Assert.assertEquals(FILE_DATA, manager.read(expectedTargetFile));
+    }
+
+    @Test
+    public void shallReturnErrorWhenUndefinedPropertyUsedInDirectoryDefinition() throws Exception {
+        final String undefined = "undefined";
+        final String undefinedVariable = "$" + undefined;
+        manifestFile.put("initFiles", Arrays.asList(FILE_NAME));
+        manifestFile.put("directory", undefinedVariable);
+        SandboxManager manager = initValid(manifestFile);
+
+        String out = runInitCommand(manager);
+        assertThat(out, startsWith("Error: Undefined variable: '" + undefined + "'"));
+    }
+
+    @Test
+    public void shallPutContentInNewDirectoryNamedByProperty() throws Exception {
+        properties.put("name", PROPERTY_NAME);
+        properties.put("description", PROPERTY_DESCRIPTION);
+        manifestFile.put("properties", Arrays.asList(properties));
+        manifestFile.put("initFiles", Arrays.asList(FILE_NAME));
+        manifestFile.put("directory", "$properties." + PROPERTY_NAME);
+        SandboxManager manager = initValid(manifestFile);
+
+        String directory = "directory";
+        manager.getRunner().addInput(directory);
         manager.writeToTemplateDir(FILE_NAME, FILE_DATA);
 
         String expectedTargetFile = directory + "/" + FILE_NAME;

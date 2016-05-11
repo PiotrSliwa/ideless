@@ -4,6 +4,7 @@ import com.github.ideless.CommandHandler;
 import com.github.ideless.SafeCommandHandler;
 import com.github.ideless.UserIO;
 import com.github.ideless.processors.ExpressionConfigUpdater;
+import com.github.ideless.processors.UndefinedVariableException;
 import com.google.gson.JsonSyntaxException;
 import java.io.IOException;
 import java.util.List;
@@ -78,11 +79,28 @@ public class InitCommandHandler implements CommandHandler {
         }
     }
 
-    private String createTargetPath(Manifest manifest, String path) {
+    private String createTargetPath(Manifest manifest, String path) throws UndefinedVariableException {
         String directory = manifest.getDirectory();
         if (directory == null)
             return path;
+        if (isVariable(directory))
+            directory = getVariable(parseVariableName(directory));
         return directory + "/" + path;
+    }
+
+    private String getVariable(String name) throws UndefinedVariableException {
+        String value = (String) variableRepository.get(name);
+        if (value == null)
+            throw new UndefinedVariableException(name);
+        return value;
+    }
+
+    private static boolean isVariable(String expression) {
+        return expression.charAt(0) == '$';
+    }
+
+    private static String parseVariableName(String expression) {
+        return expression.substring(1);
     }
 
     private void updateExpressionConfig(Manifest manifest) {

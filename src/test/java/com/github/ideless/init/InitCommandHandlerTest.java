@@ -3,6 +3,7 @@ package com.github.ideless.init;
 import com.github.ideless.SafeCommandHandler;
 import com.github.ideless.UserIO;
 import com.github.ideless.processors.ExpressionConfigUpdater;
+import com.github.ideless.processors.UndefinedVariableException;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
@@ -13,10 +14,13 @@ import static org.mockito.Mockito.*;
 
 public class InitCommandHandlerTest {
 
+    private static final String DIRECTORY = "directory";
     private static final String PATH = "dummy";
     private static final String MANIFEST_PATH = PATH + "/.ideless";
     private static final String FILE = "file1";
     private static final List<String> FILES = Arrays.asList("file1", "file2");
+    private static final String NAME = "name";
+    private static final String VARIABLE = "$" + NAME;
 
     private SafeCommandHandler defaultHandler;
     private ManifestReader manifestReader;
@@ -87,12 +91,26 @@ public class InitCommandHandlerTest {
 
     @Test
     public void shallReadInitFilesAndSaveThemToTargetWithSpecifiedNewDirectory() throws Exception {
-        String directory = "directory";
-        when(manifestReader.read(MANIFEST_PATH)).thenReturn(new Manifest(Arrays.asList(FILE), null, null, directory));
-
+        when(manifestReader.read(MANIFEST_PATH)).thenReturn(new Manifest(Arrays.asList(FILE), null, null, DIRECTORY));
         sut.handle(Arrays.asList(PATH));
+        verify(fileInitializer).initialize(PATH + "/" + FILE, DIRECTORY + "/" + FILE);
+    }
 
-        verify(fileInitializer).initialize(PATH + "/" + FILE, directory + "/" + FILE);
+    @Test
+    public void shallReadInitFilesAndSaveThemToTargetWithDirectorySpecifiedByVariable() throws Exception {
+        when(manifestReader.read(MANIFEST_PATH)).thenReturn(new Manifest(Arrays.asList(FILE), null, null, VARIABLE));
+        when(variableRepository.get(NAME)).thenReturn(DIRECTORY);
+        sut.handle(Arrays.asList(PATH));
+        verify(variableRepository).get(NAME);
+        verify(fileInitializer).initialize(PATH + "/" + FILE, DIRECTORY + "/" + FILE);
+    }
+
+    @Test(expected = UndefinedVariableException.class)
+    public void shallThrowErrorWhenNullVariableReturnedByRepositoryWhenTryiungToObtainDirectory() throws Exception {
+        when(manifestReader.read(MANIFEST_PATH)).thenReturn(new Manifest(Arrays.asList(FILE), null, null, VARIABLE));
+        sut.handle(Arrays.asList(PATH));
+        verify(variableRepository).get(NAME);
+        verify(fileInitializer).initialize(PATH + "/" + FILE, DIRECTORY + "/" + FILE);
     }
 
     @Test(expected = CannotFindFileException.class)
