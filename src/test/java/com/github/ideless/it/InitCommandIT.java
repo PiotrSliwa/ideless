@@ -47,7 +47,9 @@ public class InitCommandIT {
     }
 
     private static String runInitCommand(SandboxManager manager) throws Exception {
-        return manager.getRunner().run("init " + manager.getTemplateDirName());
+        String output = manager.getRunner().run("init " + manager.getTemplateDirName());
+        manager.write("output.log", output);
+        return output;
     }
 
     @Before
