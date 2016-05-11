@@ -234,4 +234,18 @@ public class InitCommandIT {
         Assert.assertEquals(BEFORE_EXPR + USER_VALUE + AFTER_EXPR, manager.read(FILE_NAME));
     }
 
+    @Test
+    public void shallPutContentInNewDirectoryIfOneSpecified() throws Exception {
+        String directory = "directory";
+        manifestFile.put("initFiles", Arrays.asList(FILE_NAME));
+        manifestFile.put("directory", directory);
+        SandboxManager manager = initValid(manifestFile);
+        manager.writeToTemplateDir(FILE_NAME, FILE_DATA);
+
+        String expectedTargetFile = directory + "/" + FILE_NAME;
+        String out = runInitCommand(manager);
+        assertThat(out, containsString("Initializing file: " + expectedTargetFile));
+        Assert.assertEquals(FILE_DATA, manager.read(expectedTargetFile));
+    }
+
 }

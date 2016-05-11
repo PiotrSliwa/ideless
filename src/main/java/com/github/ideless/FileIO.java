@@ -1,5 +1,6 @@
 package com.github.ideless;
 
+import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -16,9 +17,17 @@ public class FileIO {
     }
 
     public void write(String filename, String data) throws IOException {
-        try (FileWriter fw = new FileWriter(filename)) {
+        makeParentDirs(filename);
+        File file = new File(filename);
+        try (FileWriter fw = new FileWriter(file)) {
             fw.write(data);
         }
+    }
+
+    private void makeParentDirs(String filename) {
+        File parent = new File(filename + "/..");
+        if (!parent.isDirectory())
+            parent.mkdirs();
     }
 
 }

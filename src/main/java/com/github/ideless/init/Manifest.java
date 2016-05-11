@@ -7,6 +7,7 @@ public class Manifest {
     private List<String> initFiles;
     private List<Property> properties;
     private List<String> expressionFormat;
+    private String directory;
 
     public Manifest() { }
 
@@ -25,6 +26,13 @@ public class Manifest {
         this.expressionFormat = expressionFormat;
     }
 
+    public Manifest(List<String> initFiles, List<Property> properties, List<String> expressionFormat, String directory) {
+        this.initFiles = initFiles;
+        this.properties = properties;
+        this.expressionFormat = expressionFormat;
+        this.directory = directory;
+    }
+
     public List<String> getInitFiles() {
         return initFiles;
     }
@@ -35,5 +43,9 @@ public class Manifest {
 
     public List<String> getExpressionFormat() {
         return expressionFormat;
+    }
+
+    public String getDirectory() {
+        return directory;
     }
 }

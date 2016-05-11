@@ -67,14 +67,22 @@ public class InitCommandHandler implements CommandHandler {
 
     private void initFiles(Manifest manifest, String templateDir) throws Exception {
         for (String path : manifest.getInitFiles()) {
+            String targetPath = createTargetPath(manifest, path);
             try {
-                fileInitializer.initialize(templateDir + "/" + path, path);
-                userIO.println("Initializing file: " + path);
+                fileInitializer.initialize(templateDir + "/" + path, targetPath);
+                userIO.println("Initializing file: " + targetPath);
             }
             catch (IOException ex) {
-                throw new CannotFindFileException(path);
+                throw new CannotFindFileException(targetPath);
             }
         }
+    }
+
+    private String createTargetPath(Manifest manifest, String path) {
+        String directory = manifest.getDirectory();
+        if (directory == null)
+            return path;
+        return directory + "/" + path;
     }
 
     private void updateExpressionConfig(Manifest manifest) {

@@ -72,14 +72,27 @@ public class InitCommandHandlerTest {
     @Test
     public void shallReadInitFilesAndSaveThemToTarget() throws Exception {
         when(manifestReader.read(MANIFEST_PATH)).thenReturn(new Manifest(FILES));
+        sut.handle(Arrays.asList(PATH));
+        verify(fileInitializer).initialize(PATH + "/" + FILES.get(0), FILES.get(0));
+        verify(fileInitializer).initialize(PATH + "/" + FILES.get(1), FILES.get(1));
+    }
+
+    @Test
+    public void shallPrintInformationAboutFileInitialization() throws Exception {
+        when(manifestReader.read(MANIFEST_PATH)).thenReturn(new Manifest(FILES));
+        sut.handle(Arrays.asList(PATH));
+        verify(userIO).println(getFileInitMessage(FILES.get(0)));
+        verify(userIO).println(getFileInitMessage(FILES.get(1)));
+    }
+
+    @Test
+    public void shallReadInitFilesAndSaveThemToTargetWithSpecifiedNewDirectory() throws Exception {
+        String directory = "directory";
+        when(manifestReader.read(MANIFEST_PATH)).thenReturn(new Manifest(Arrays.asList(FILE), null, null, directory));
 
         sut.handle(Arrays.asList(PATH));
 
-        verify(fileInitializer).initialize(PATH + "/" + FILES.get(0), FILES.get(0));
-        verify(fileInitializer).initialize(PATH + "/" + FILES.get(1), FILES.get(1));
-
-        verify(userIO).println(getFileInitMessage(FILES.get(0)));
-        verify(userIO).println(getFileInitMessage(FILES.get(1)));
+        verify(fileInitializer).initialize(PATH + "/" + FILE, directory + "/" + FILE);
     }
 
     @Test(expected = CannotFindFileException.class)
