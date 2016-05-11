@@ -8,6 +8,9 @@ import static org.mockito.Mockito.*;
 public class ContentProcessorTest {
 
     private static final String EXPR = "some expression";
+    private static final String DEFAULT_ESCAPE_SEQUENCE = "\\";
+    private static final String[] DEFAULT_DELIMITERS = {"{{", "}}"};
+    private static final String RESULT = "result";
 
     private static String createExpression(String expressionContent) {
         return "{{" + expressionContent + "}}";
@@ -38,10 +41,8 @@ public class ContentProcessorTest {
 
     @Test
     public void shallDelegateExpressionToExpressionProcessorAndReplaceOccurenceWithTheReturnedValue() throws Exception {
-        String result = "result";
-        when(expressionProcessor.process(EXPR)).thenReturn(result);
-
-        assertEquals(createSurroundedText(result), sut.process(createSurroundedText(createExpression(EXPR))));
+        when(expressionProcessor.process(EXPR)).thenReturn(RESULT);
+        assertEquals(createSurroundedText(RESULT), sut.process(createSurroundedText(createExpression(EXPR))));
     }
 
     @Test
@@ -57,9 +58,26 @@ public class ContentProcessorTest {
     }
 
     @Test
-    public void shallReturnUntouchedStringWhenItIsPrecededByEscapeChar() throws Exception {
-        final String escapeChar = "\\";
-        final String input = createSurroundedText(escapeChar + createExpression(EXPR));
+    public void shallReturnUntouchedStringWhenItIsPrecededByEscapeSequence() throws Exception {
+        final String input = createSurroundedText(DEFAULT_ESCAPE_SEQUENCE + createExpression(EXPR));
+        assertEquals(input, sut.process(input));
+    }
+
+    @Test
+    public void shallDelegateExpressionToExpressionProcessorAndReplaceOccurenceWithTheReturnedValue_WithChangedDelimiters() throws Exception {
+        String[] delimiters = {"<", ">"};
+        when(expressionProcessor.process(EXPR)).thenReturn(RESULT);
+
+        sut.updateConfig(delimiters[0], delimiters[1], DEFAULT_ESCAPE_SEQUENCE);
+        assertEquals(createSurroundedText(RESULT), sut.process(createSurroundedText(delimiters[0] + EXPR + delimiters[1])));
+    }
+
+    @Test
+    public void shallReturnUntouchedStringWhenItIsPrecededByEscapeChar_WithChangedEscapeSequence() throws Exception {
+        final String escapeSequence = "+=$*/";
+        final String input = createSurroundedText(escapeSequence + createExpression(EXPR));
+
+        sut.updateConfig(DEFAULT_DELIMITERS[0], DEFAULT_DELIMITERS[1], escapeSequence);
         assertEquals(input, sut.process(input));
     }
 

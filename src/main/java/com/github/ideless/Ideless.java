@@ -35,7 +35,7 @@ public class Ideless {
         ManifestReader manifestReader = new ManifestReader(fileIO);
         FileInitializer fileInitializer = new FileInitializer(fileIO, contentProcessor);
         CommandDispatcher dispatcher = new CommandDispatcher(defaultHandler, errorHandler);
-        dispatcher.addHandler("init", new InitCommandHandler(defaultHandler, manifestReader, userIO, fileInitializer, variableRepository));
+        dispatcher.addHandler("init", new InitCommandHandler(defaultHandler, manifestReader, userIO, fileInitializer, variableRepository, contentProcessor));
         dispatcher.dispatch(args);
 
     }

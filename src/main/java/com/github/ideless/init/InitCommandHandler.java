@@ -3,29 +3,35 @@ package com.github.ideless.init;
 import com.github.ideless.CommandHandler;
 import com.github.ideless.SafeCommandHandler;
 import com.github.ideless.UserIO;
+import com.github.ideless.processors.ExpressionConfigUpdater;
 import com.google.gson.JsonSyntaxException;
 import java.io.IOException;
 import java.util.List;
 
 public class InitCommandHandler implements CommandHandler {
 
+    private static final int EXPRESSION_FORMAT_SIZE = 3;
+
     private final SafeCommandHandler invalidParameterHandler;
     private final ManifestReader manifestReader;
     private final UserIO userIO;
     private final FileInitializer fileInitializer;
     private final VariableRepository variableRepository;
+    private final ExpressionConfigUpdater expressionConfigUpdater;
 
     public InitCommandHandler(
             SafeCommandHandler invalidParameterHandler,
             ManifestReader manifestReader,
             UserIO userIO,
             FileInitializer fileInitializer,
-            VariableRepository variableRepository) {
+            VariableRepository variableRepository,
+            ExpressionConfigUpdater expressionConfigUpdater) {
         this.invalidParameterHandler = invalidParameterHandler;
         this.manifestReader = manifestReader;
         this.userIO = userIO;
         this.fileInitializer = fileInitializer;
         this.variableRepository = variableRepository;
+        this.expressionConfigUpdater = expressionConfigUpdater;
     }
 
     @Override
@@ -36,6 +42,7 @@ public class InitCommandHandler implements CommandHandler {
         }
         String templateDir = getTemplateDir(parameters);
         Manifest manifest = readManifest(templateDir);
+        updateExpressionConfig(manifest);
         initProperties(manifest);
         initFiles(manifest, templateDir);
     }
@@ -70,6 +77,13 @@ public class InitCommandHandler implements CommandHandler {
         }
     }
 
+    private void updateExpressionConfig(Manifest manifest) {
+        List<String> format = manifest.getExpressionFormat();
+        if (format == null)
+            return;
+        expressionConfigUpdater.updateConfig(format.get(0), format.get(1), format.get(2));
+    }
+
     private Manifest readManifest(String templateDir) throws Exception {
         try {
             Manifest manifest = manifestReader.read(templateDir + "/.ideless");
@@ -89,6 +103,8 @@ public class InitCommandHandler implements CommandHandler {
             throw new InvalidTemplateException("null manifest");
         if (manifest.getInitFiles() == null)
             throw new LackOfFieldException("initFiles");
+        if (manifest.getExpressionFormat() != null && manifest.getExpressionFormat().size() != EXPRESSION_FORMAT_SIZE)
+            throw new InvalidNumberOfElementsInArrayException("expressionFormat", EXPRESSION_FORMAT_SIZE);
     }
 
 }

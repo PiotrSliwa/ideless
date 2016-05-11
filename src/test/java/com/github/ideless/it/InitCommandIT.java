@@ -175,4 +175,29 @@ public class InitCommandIT {
         Assert.assertEquals(template, manager.read(FILE_NAME));
     }
 
+    @Test
+    public void shallReturnErrorWhenInsufficientElementsGivenInExpressionFormat() throws Exception {
+        SandboxManager manager = initValid(
+                "{\"initFiles\":[\"" + FILE_NAME + "\"],\"expressionFormat\":[\"1\"],\"properties\":[{\"name\":\"" +
+                PROPERTY_NAME + "\",\"description\":\"" + PROPERTY_DESCRIPTION + "\"}]}");
+        manager.writeToTemplateDir(FILE_NAME, FILE_DATA);
+        manager.getRunner().addInput(USER_VALUE);
+
+        String out = runInitCommand(manager);
+        assertThat(out, startsWith("Error: Invalid number of elements in array 'expressionFormat'"));
+    }
+
+    @Test
+    public void shallReplaceExpressionWithPropertyWithUserDefinedExpressionFormat() throws Exception {
+        SandboxManager manager = initValid(
+                "{\"initFiles\":[\"" + FILE_NAME + "\"],\"expressionFormat\":[\"<\",\">\",\"\\\\\"],\"properties\":[{\"name\":\"" +
+                PROPERTY_NAME + "\",\"description\":\"" + PROPERTY_DESCRIPTION + "\"}]}");
+        manager.writeToTemplateDir(FILE_NAME, BEFORE_EXPR + "< $properties." + PROPERTY_NAME + " >" + AFTER_EXPR);
+        manager.getRunner().addInput(USER_VALUE);
+
+        String out = runInitCommand(manager);
+        assertThat(out, containsString("Initializing file: " + FILE_NAME));
+        Assert.assertEquals(BEFORE_EXPR + USER_VALUE + AFTER_EXPR, manager.read(FILE_NAME));
+    }
+
 }

@@ -2,6 +2,7 @@ package com.github.ideless.init;
 
 import com.github.ideless.SafeCommandHandler;
 import com.github.ideless.UserIO;
+import com.github.ideless.processors.ExpressionConfigUpdater;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
@@ -22,6 +23,7 @@ public class InitCommandHandlerTest {
     private UserIO userIO;
     private FileInitializer fileInitializer;
     private VariableRepository variableRepository;
+    private ExpressionConfigUpdater expressionConfigUpdater;
     private InitCommandHandler sut;
 
     private static String getFileInitMessage(String file) {
@@ -39,7 +41,8 @@ public class InitCommandHandlerTest {
         userIO = mock(UserIO.class);
         fileInitializer = mock(FileInitializer.class);
         variableRepository = mock(VariableRepository.class);
-        sut = new InitCommandHandler(defaultHandler, manifestReader, userIO, fileInitializer, variableRepository);
+        expressionConfigUpdater = mock(ExpressionConfigUpdater.class);
+        sut = new InitCommandHandler(defaultHandler, manifestReader, userIO, fileInitializer, variableRepository, expressionConfigUpdater);
     }
 
     @Test
@@ -97,6 +100,20 @@ public class InitCommandHandlerTest {
 
         verify(userIO).print(getPropertyQuestionMessage(property));
         verify(variableRepository).setProperty(property.getName(), userValue);
+    }
+
+    @Test(expected = InvalidNumberOfElementsInArrayException.class)
+    public void shallThrowErrorWhenExpressionFormatDoesNotContainRequiredNumberOfElements() throws Exception {
+        when(manifestReader.read(MANIFEST_PATH)).thenReturn(new Manifest(Arrays.asList(FILE), null, Arrays.asList("1")));
+        sut.handle(Arrays.asList(PATH));
+    }
+
+    @Test
+    public void shallConfigureExpressionConfigUpdaterWithGivenConfig() throws Exception {
+        List<String> config = Arrays.asList("1", "2", "3");
+        when(manifestReader.read(MANIFEST_PATH)).thenReturn(new Manifest(Arrays.asList(FILE), null, config));
+        sut.handle(Arrays.asList(PATH));
+        verify(expressionConfigUpdater).updateConfig(config.get(0), config.get(1), config.get(2));
     }
 
 }

@@ -4,5 +4,5 @@ import java.util.List;
 
 @FunctionalInterface
 public interface SafeCommandHandler {
-    public void handle(List<String> parameters);
+    void handle(List<String> parameters);
 }
