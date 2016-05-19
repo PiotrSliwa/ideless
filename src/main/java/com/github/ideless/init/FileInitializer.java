@@ -2,6 +2,7 @@ package com.github.ideless.init;
 
 import com.github.ideless.FileIO;
 import com.github.ideless.processors.ContentProcessor;
+import java.nio.file.Path;
 
 public class FileInitializer {
 
@@ -13,9 +14,9 @@ public class FileInitializer {
         this.contentProcessor = contentProcessor;
     }
 
-    public void initialize(String sourcePath, String targetPath) throws Exception {
-        String data = fileIO.read(sourcePath);
-        fileIO.write(targetPath, contentProcessor.process(data));
+    public void initialize(Path source, Path target) throws Exception {
+        String data = fileIO.read(source);
+        fileIO.write(target, contentProcessor.process(data));
     }
 
 }

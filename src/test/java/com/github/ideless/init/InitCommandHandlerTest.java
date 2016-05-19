@@ -5,6 +5,8 @@ import com.github.ideless.UserIO;
 import com.github.ideless.processors.ExpressionConfigUpdater;
 import com.github.ideless.processors.UndefinedVariableException;
 import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 import org.junit.Before;
@@ -15,8 +17,8 @@ import static org.mockito.Mockito.*;
 public class InitCommandHandlerTest {
 
     private static final String DIRECTORY = "directory";
-    private static final String PATH = "dummy";
-    private static final String MANIFEST_PATH = PATH + "/.ideless";
+    private static final String TEMPLATE_PATH = "dummy";
+    private static final Path MANIFEST_PATH = Paths.get(TEMPLATE_PATH, ".ideless");
     private static final String FILE = "file1";
     private static final List<String> FILES = Arrays.asList("file1", "file2");
     private static final String NAME = "name";
@@ -58,33 +60,33 @@ public class InitCommandHandlerTest {
     @Test(expected = InvalidTemplateException.class)
     public void shallThrowErrorWhenManifestCannotBeRead() throws Exception {
         when(manifestReader.read(MANIFEST_PATH)).thenThrow(new IOException());
-        sut.handle(Arrays.asList(PATH));
+        sut.handle(Arrays.asList(TEMPLATE_PATH));
     }
 
     @Test(expected = InvalidTemplateException.class)
     public void shallThrowErrorWhenNullManifestReturned() throws Exception {
         when(manifestReader.read(MANIFEST_PATH)).thenReturn(null);
-        sut.handle(Arrays.asList(PATH));
+        sut.handle(Arrays.asList(TEMPLATE_PATH));
     }
 
     @Test(expected = LackOfFieldException.class)
     public void shallThrowErrorWhenEmptyManifestReturned() throws Exception {
         when(manifestReader.read(MANIFEST_PATH)).thenReturn(new Manifest());
-        sut.handle(Arrays.asList(PATH));
+        sut.handle(Arrays.asList(TEMPLATE_PATH));
     }
 
     @Test
     public void shallReadInitFilesAndSaveThemToTarget() throws Exception {
         when(manifestReader.read(MANIFEST_PATH)).thenReturn(new Manifest(FILES));
-        sut.handle(Arrays.asList(PATH));
-        verify(fileInitializer).initialize(PATH + "/" + FILES.get(0), FILES.get(0));
-        verify(fileInitializer).initialize(PATH + "/" + FILES.get(1), FILES.get(1));
+        sut.handle(Arrays.asList(TEMPLATE_PATH));
+        verify(fileInitializer).initialize(Paths.get(TEMPLATE_PATH, FILES.get(0)), Paths.get(FILES.get(0)));
+        verify(fileInitializer).initialize(Paths.get(TEMPLATE_PATH, FILES.get(1)), Paths.get(FILES.get(1)));
     }
 
     @Test
     public void shallPrintInformationAboutFileInitialization() throws Exception {
         when(manifestReader.read(MANIFEST_PATH)).thenReturn(new Manifest(FILES));
-        sut.handle(Arrays.asList(PATH));
+        sut.handle(Arrays.asList(TEMPLATE_PATH));
         verify(userIO).println(getFileInitMessage(FILES.get(0)));
         verify(userIO).println(getFileInitMessage(FILES.get(1)));
     }
@@ -92,32 +94,32 @@ public class InitCommandHandlerTest {
     @Test
     public void shallReadInitFilesAndSaveThemToTargetWithSpecifiedNewDirectory() throws Exception {
         when(manifestReader.read(MANIFEST_PATH)).thenReturn(new Manifest(Arrays.asList(FILE), null, null, DIRECTORY));
-        sut.handle(Arrays.asList(PATH));
-        verify(fileInitializer).initialize(PATH + "/" + FILE, DIRECTORY + "/" + FILE);
+        sut.handle(Arrays.asList(TEMPLATE_PATH));
+        verify(fileInitializer).initialize(Paths.get(TEMPLATE_PATH, FILE), Paths.get(DIRECTORY, FILE));
     }
 
     @Test
     public void shallReadInitFilesAndSaveThemToTargetWithDirectorySpecifiedByVariable() throws Exception {
         when(manifestReader.read(MANIFEST_PATH)).thenReturn(new Manifest(Arrays.asList(FILE), null, null, VARIABLE));
         when(variableRepository.get(NAME)).thenReturn(DIRECTORY);
-        sut.handle(Arrays.asList(PATH));
+        sut.handle(Arrays.asList(TEMPLATE_PATH));
         verify(variableRepository).get(NAME);
-        verify(fileInitializer).initialize(PATH + "/" + FILE, DIRECTORY + "/" + FILE);
+        verify(fileInitializer).initialize(Paths.get(TEMPLATE_PATH, FILE), Paths.get(DIRECTORY, FILE));
     }
 
     @Test(expected = UndefinedVariableException.class)
     public void shallThrowErrorWhenNullVariableReturnedByRepositoryWhenTryiungToObtainDirectory() throws Exception {
         when(manifestReader.read(MANIFEST_PATH)).thenReturn(new Manifest(Arrays.asList(FILE), null, null, VARIABLE));
-        sut.handle(Arrays.asList(PATH));
+        sut.handle(Arrays.asList(TEMPLATE_PATH));
         verify(variableRepository).get(NAME);
-        verify(fileInitializer).initialize(PATH + "/" + FILE, DIRECTORY + "/" + FILE);
+        verify(fileInitializer).initialize(Paths.get(TEMPLATE_PATH, FILE), Paths.get(DIRECTORY, FILE));
     }
 
     @Test(expected = CannotFindFileException.class)
     public void shallThrowErrorWhenInitializerReturnsIOException() throws Exception {
         when(manifestReader.read(MANIFEST_PATH)).thenReturn(new Manifest(FILES));
         doThrow(new IOException()).when(fileInitializer).initialize(Matchers.any(), Matchers.any());
-        sut.handle(Arrays.asList(PATH));
+        sut.handle(Arrays.asList(TEMPLATE_PATH));
     }
 
     @Test
@@ -127,7 +129,7 @@ public class InitCommandHandlerTest {
         when(manifestReader.read(MANIFEST_PATH)).thenReturn(new Manifest(Arrays.asList(FILE), Arrays.asList(property)));
         when(userIO.read()).thenReturn(userValue);
 
-        sut.handle(Arrays.asList(PATH));
+        sut.handle(Arrays.asList(TEMPLATE_PATH));
 
         verify(userIO).print(getPropertyQuestionMessage(property));
         verify(variableRepository).setProperty(property.getName(), userValue);
@@ -136,14 +138,14 @@ public class InitCommandHandlerTest {
     @Test(expected = InvalidNumberOfElementsInArrayException.class)
     public void shallThrowErrorWhenExpressionFormatDoesNotContainRequiredNumberOfElements() throws Exception {
         when(manifestReader.read(MANIFEST_PATH)).thenReturn(new Manifest(Arrays.asList(FILE), null, Arrays.asList("1")));
-        sut.handle(Arrays.asList(PATH));
+        sut.handle(Arrays.asList(TEMPLATE_PATH));
     }
 
     @Test
     public void shallConfigureExpressionConfigUpdaterWithGivenConfig() throws Exception {
         List<String> config = Arrays.asList("1", "2", "3");
         when(manifestReader.read(MANIFEST_PATH)).thenReturn(new Manifest(Arrays.asList(FILE), null, config));
-        sut.handle(Arrays.asList(PATH));
+        sut.handle(Arrays.asList(TEMPLATE_PATH));
         verify(expressionConfigUpdater).updateConfig(config.get(0), config.get(1), config.get(2));
     }
 

@@ -7,6 +7,8 @@ import com.github.ideless.processors.ExpressionConfigUpdater;
 import com.github.ideless.processors.UndefinedVariableException;
 import com.google.gson.JsonSyntaxException;
 import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 
 public class InitCommandHandler implements CommandHandler {
@@ -68,24 +70,24 @@ public class InitCommandHandler implements CommandHandler {
 
     private void initFiles(Manifest manifest, String templateDir) throws Exception {
         for (String path : manifest.getInitFiles()) {
-            String targetPath = createTargetPath(manifest, path);
+            Path targetPath = createTargetPath(manifest, path);
             try {
-                fileInitializer.initialize(templateDir + "/" + path, targetPath);
+                fileInitializer.initialize(Paths.get(templateDir, path), targetPath);
                 userIO.println("Initializing file: " + targetPath);
             }
             catch (IOException ex) {
-                throw new CannotFindFileException(targetPath);
+                throw new CannotFindFileException(targetPath.toString());
             }
         }
     }
 
-    private String createTargetPath(Manifest manifest, String path) throws UndefinedVariableException {
+    private Path createTargetPath(Manifest manifest, String path) throws UndefinedVariableException {
         String directory = manifest.getDirectory();
         if (directory == null)
-            return path;
+            return Paths.get(path);
         if (isVariable(directory))
             directory = getVariable(parseVariableName(directory));
-        return directory + "/" + path;
+        return Paths.get(directory, path);
     }
 
     private String getVariable(String name) throws UndefinedVariableException {
@@ -112,7 +114,7 @@ public class InitCommandHandler implements CommandHandler {
 
     private Manifest readManifest(String templateDir) throws Exception {
         try {
-            Manifest manifest = manifestReader.read(templateDir + "/.ideless");
+            Manifest manifest = manifestReader.read(Paths.get(templateDir, ".ideless"));
             validate(manifest);
             return manifest;
         }

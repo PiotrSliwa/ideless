@@ -2,14 +2,16 @@ package com.github.ideless.init;
 
 import com.github.ideless.FileIO;
 import com.github.ideless.processors.ContentProcessor;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import org.junit.Before;
 import org.junit.Test;
 import static org.mockito.Mockito.*;
 
 public class FileInitializerTest {
 
-    private final static String SOURCE_PATH = "source";
-    private final static String TARGET_PATH = "target";
+    private final static Path SOURCE_PATH = Paths.get("source");
+    private final static Path TARGET_PATH = Paths.get("target");
     private final static String DATA = "file contents";
     private final static String PROCESSED_DATA = "processed file contents";
 
