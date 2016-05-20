@@ -14,6 +14,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.commons.io.FileUtils;
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.startsWith;
 import org.junit.After;
 import org.junit.Assert;
@@ -106,14 +107,14 @@ public class InitCommandIT {
     public void absentTemplateDirectory() throws Exception {
         SandboxManager manager = new SandboxManager("InitCommandIT_absentTemplateDirectory");
         String out = manager.getRunner().run("init strangeTemplate");
-        assertThat(out, startsWith("Error: Invalid ideless template directory ("));
+        assertThat(out, startsWith("Error: Invalid ideless template ("));
     }
 
     @Test
     public void absentManifestFile() throws Exception {
         SandboxManager manager = new SandboxManager("InitCommandIT_absentManifestFile");
         String out = runInitCommand(manager);
-        assertThat(out, startsWith("Error: Invalid ideless template directory ("));
+        assertThat(out, startsWith("Error: Invalid ideless template ("));
     }
 
     @Test
@@ -332,9 +333,26 @@ public class InitCommandIT {
 
         manager.getRunner().addInput(saveasName);
 
-        String firstOut = runInitCommand(manager);
-        assertThat(firstOut, containsString("Save template as (leave empty if you don't want to save it): "));
+        String out = runInitCommand(manager);
+        assertThat(out, containsString("Save template as (leave empty if you don't want to save it): "));
         assertFileInUserHomeMatches(Paths.get(saveasName, FILE_NAME), FILE_DATA);
+    }
+
+    @Test
+    public void shallUseSavedTemplate() throws Exception {
+        final String saveasName = "someName";
+
+        manifestFile.put("initFiles", Arrays.asList(FILE_NAME));
+        SandboxManager manager = initValid(manifestFile);
+        manager.writeToTemplateDir(FILE_NAME, FILE_DATA);
+
+        manager.getRunner().addInput(saveasName);
+
+        runInitCommand(manager);
+        String out = runInitCommand(manager, saveasName);
+        assertThat(out, containsString("Initializing file: " + FILE_NAME));
+        assertThat(out, not(containsString("Save template as (leave empty if you don't want to save it): ")));
+        Assert.assertEquals(FILE_DATA, manager.read(FILE_NAME));
     }
 
 }

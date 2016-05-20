@@ -10,6 +10,10 @@ import java.util.stream.Stream;
 
 public class FileIO {
 
+    public boolean isReadable(Path path) {
+        return path.toFile().canRead();
+    }
+
     public String read(Path path) throws IOException {
         try (Stream<String> stream = Files.lines(path)) {
             return stream.collect(Collectors.joining("\n"));

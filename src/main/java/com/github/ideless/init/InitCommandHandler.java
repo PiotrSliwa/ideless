@@ -52,16 +52,35 @@ public class InitCommandHandler implements CommandHandler {
             invalidParameterHandler.handle(parameters);
             return;
         }
-        String templateDir = getTemplateDir(parameters);
-        Manifest manifest = readManifest(templateDir);
+        TemplateInfo templateInfo = getTemplateInfo(parameters);
+        Manifest manifest = readManifest(templateInfo.dirPath);
         updateExpressionConfig(manifest);
         initProperties(manifest);
-        initFiles(manifest, templateDir);
-        saveTemplate(manifest, templateDir);
+        initFiles(manifest, templateInfo.dirPath);
+        saveTemplate(manifest, templateInfo);
     }
 
-    private static String getTemplateDir(List<String> parameters) {
-        return parameters.get(0);
+    private static class TemplateInfo {
+        enum TemplateType { Local, UserHome }
+
+        Path dirPath;
+        TemplateType type;
+
+        public TemplateInfo(Path dirPath, TemplateType type) {
+            this.dirPath = dirPath;
+            this.type = type;
+        }
+    }
+
+    private TemplateInfo getTemplateInfo(List<String> parameters) throws InvalidTemplateException {
+        String parameter = parameters.get(0);
+        Path localTemplateDir = Paths.get(parameter);
+        if (fileIO.isReadable(localTemplateDir))
+            return new TemplateInfo(localTemplateDir, TemplateInfo.TemplateType.Local);
+        Path homeTemplateDir = pathsCreator.createUserHome().resolve(parameter);
+        if (fileIO.isReadable(homeTemplateDir))
+            return new TemplateInfo(homeTemplateDir, TemplateInfo.TemplateType.UserHome);
+        throw new InvalidTemplateException(localTemplateDir.toString());
     }
 
     private void initProperties(Manifest manifest) throws IOException {
@@ -78,11 +97,11 @@ public class InitCommandHandler implements CommandHandler {
         return userIO.read();
     }
 
-    private void initFiles(Manifest manifest, String templateDir) throws Exception {
+    private void initFiles(Manifest manifest, Path sourceDir) throws Exception {
         for (String path : manifest.getInitFiles()) {
             Path targetPath = createTargetPath(manifest, path);
             try {
-                fileInitializer.initialize(Paths.get(templateDir, path), targetPath);
+                fileInitializer.initialize(sourceDir.resolve(path), targetPath);
                 userIO.println("Initializing file: " + targetPath);
             }
             catch (IOException ex) {
@@ -91,12 +110,14 @@ public class InitCommandHandler implements CommandHandler {
         }
     }
 
-    private void saveTemplate(Manifest manifest, String templateDir) throws Exception {
+    private void saveTemplate(Manifest manifest, TemplateInfo templateInfo) throws Exception {
+        if (templateInfo.type == TemplateInfo.TemplateType.UserHome)
+            return;
         userIO.println("Save template as (leave empty if you don't want to save it): ");
         final String userTemplateName = userIO.read();
-        copyFileToHome(Paths.get(templateDir, MANIFEST_FILE_NAME), Paths.get(userTemplateName, MANIFEST_FILE_NAME));
+        copyFileToHome(templateInfo.dirPath.resolve(MANIFEST_FILE_NAME), Paths.get(userTemplateName, MANIFEST_FILE_NAME));
         for (String path : manifest.getInitFiles())
-            copyFileToHome(Paths.get(templateDir, path), Paths.get(userTemplateName, path));
+            copyFileToHome(templateInfo.dirPath.resolve(path), Paths.get(userTemplateName, path));
     }
 
     private void copyFileToHome(Path source, Path target) throws IOException {
@@ -125,7 +146,8 @@ public class InitCommandHandler implements CommandHandler {
     }
 
     private static String parseVariableName(String expression) {
-        return expression.substring(1);
+        final int offsetAfterWhichVariableSignIsNotIncluded = 1;
+        return expression.substring(offsetAfterWhichVariableSignIsNotIncluded);
     }
 
     private void updateExpressionConfig(Manifest manifest) {
@@ -135,9 +157,9 @@ public class InitCommandHandler implements CommandHandler {
         expressionConfigUpdater.updateConfig(format.get(0), format.get(1), format.get(2));
     }
 
-    private Manifest readManifest(String templateDir) throws Exception {
+    private Manifest readManifest(Path templateDir) throws Exception {
         try {
-            Manifest manifest = manifestReader.read(Paths.get(templateDir, ".ideless"));
+            Manifest manifest = manifestReader.read(templateDir.resolve(".ideless"));
             validate(manifest);
             return manifest;
         }
