@@ -27,7 +27,15 @@ public class InitCommandHandler implements CommandHandler {
     private final FileIO fileIO;
     private final PathsCreator pathsCreator;
 
-    public InitCommandHandler(SafeCommandHandler invalidParameterHandler, ManifestReader manifestReader, UserIO userIO, FileInitializer fileInitializer, VariableRepository variableRepository, ExpressionConfigUpdater expressionConfigUpdater, FileIO fileIO, PathsCreator pathsCreator) {
+    public InitCommandHandler(
+            SafeCommandHandler invalidParameterHandler,
+            ManifestReader manifestReader,
+            UserIO userIO,
+            FileInitializer fileInitializer,
+            VariableRepository variableRepository,
+            ExpressionConfigUpdater expressionConfigUpdater,
+            FileIO fileIO,
+            PathsCreator pathsCreator) {
         this.invalidParameterHandler = invalidParameterHandler;
         this.manifestReader = manifestReader;
         this.userIO = userIO;
