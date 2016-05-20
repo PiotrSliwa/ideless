@@ -1,5 +1,7 @@
 package com.github.ideless.init;
 
+import com.github.ideless.FileIO;
+import com.github.ideless.PathsCreator;
 import com.github.ideless.SafeCommandHandler;
 import com.github.ideless.UserIO;
 import com.github.ideless.processors.ExpressionConfigUpdater;
@@ -18,11 +20,13 @@ public class InitCommandHandlerTest {
 
     private static final String DIRECTORY = "directory";
     private static final String TEMPLATE_PATH = "dummy";
-    private static final Path MANIFEST_PATH = Paths.get(TEMPLATE_PATH, ".ideless");
+    private static final String MANIFEST_FILE_NAME = ".ideless";
+    private static final Path MANIFEST_PATH = Paths.get(TEMPLATE_PATH, MANIFEST_FILE_NAME);
     private static final String FILE = "file1";
     private static final List<String> FILES = Arrays.asList("file1", "file2");
     private static final String NAME = "name";
     private static final String VARIABLE = "$" + NAME;
+    private static final Path HOME_PATH = Paths.get("HomePath");
 
     private SafeCommandHandler defaultHandler;
     private ManifestReader manifestReader;
@@ -30,6 +34,8 @@ public class InitCommandHandlerTest {
     private FileInitializer fileInitializer;
     private VariableRepository variableRepository;
     private ExpressionConfigUpdater expressionConfigUpdater;
+    private FileIO fileIO;
+    private PathsCreator pathsCreator;
     private InitCommandHandler sut;
 
     private static String getFileInitMessage(String file) {
@@ -48,7 +54,19 @@ public class InitCommandHandlerTest {
         fileInitializer = mock(FileInitializer.class);
         variableRepository = mock(VariableRepository.class);
         expressionConfigUpdater = mock(ExpressionConfigUpdater.class);
-        sut = new InitCommandHandler(defaultHandler, manifestReader, userIO, fileInitializer, variableRepository, expressionConfigUpdater);
+        fileIO = mock(FileIO.class);
+        pathsCreator = mock(PathsCreator.class);
+        sut = new InitCommandHandler(
+                defaultHandler,
+                manifestReader,
+                userIO,
+                fileInitializer,
+                variableRepository,
+                expressionConfigUpdater,
+                fileIO,
+                pathsCreator);
+
+        when(pathsCreator.createUserHome()).thenReturn(HOME_PATH);
     }
 
     @Test
@@ -147,6 +165,32 @@ public class InitCommandHandlerTest {
         when(manifestReader.read(MANIFEST_PATH)).thenReturn(new Manifest(Arrays.asList(FILE), null, config));
         sut.handle(Arrays.asList(TEMPLATE_PATH));
         verify(expressionConfigUpdater).updateConfig(config.get(0), config.get(1), config.get(2));
+    }
+
+    @Test
+    public void shallAskForSaveasNameWhenDirectoryPassed() throws Exception {
+        when(manifestReader.read(MANIFEST_PATH)).thenReturn(new Manifest(Arrays.asList(FILE)));
+        sut.handle(Arrays.asList(TEMPLATE_PATH));
+        verify(userIO, atLeastOnce()).println("Save template as (leave empty if you don't want to save it): ");
+    }
+
+    @Test
+    public void shallSaveFilesToHomeDirectory() throws Exception {
+        final String userName = "userName";
+        final String[] fileData = { "fileData1", "fileData2" };
+        final String manifestData = "manifestData";
+
+        when(manifestReader.read(MANIFEST_PATH)).thenReturn(new Manifest(FILES));
+        when(userIO.read()).thenReturn(userName);
+        when(fileIO.read(MANIFEST_PATH)).thenReturn(manifestData);
+        when(fileIO.read(Paths.get(TEMPLATE_PATH, FILES.get(0)))).thenReturn(fileData[0]);
+        when(fileIO.read(Paths.get(TEMPLATE_PATH, FILES.get(1)))).thenReturn(fileData[1]);
+
+        sut.handle(Arrays.asList(TEMPLATE_PATH));
+
+        verify(fileIO).write(HOME_PATH.resolve(userName).resolve(MANIFEST_FILE_NAME), manifestData);
+        verify(fileIO).write(HOME_PATH.resolve(userName).resolve(FILES.get(0)), fileData[0]);
+        verify(fileIO).write(HOME_PATH.resolve(userName).resolve(FILES.get(1)), fileData[1]);
     }
 
 }

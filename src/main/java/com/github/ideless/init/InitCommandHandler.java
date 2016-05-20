@@ -1,6 +1,8 @@
 package com.github.ideless.init;
 
 import com.github.ideless.CommandHandler;
+import com.github.ideless.FileIO;
+import com.github.ideless.PathsCreator;
 import com.github.ideless.SafeCommandHandler;
 import com.github.ideless.UserIO;
 import com.github.ideless.processors.ExpressionConfigUpdater;
@@ -13,6 +15,7 @@ import java.util.List;
 
 public class InitCommandHandler implements CommandHandler {
 
+    private static final String MANIFEST_FILE_NAME = ".ideless";
     private static final int EXPRESSION_FORMAT_SIZE = 3;
 
     private final SafeCommandHandler invalidParameterHandler;
@@ -21,20 +24,18 @@ public class InitCommandHandler implements CommandHandler {
     private final FileInitializer fileInitializer;
     private final VariableRepository variableRepository;
     private final ExpressionConfigUpdater expressionConfigUpdater;
+    private final FileIO fileIO;
+    private final PathsCreator pathsCreator;
 
-    public InitCommandHandler(
-            SafeCommandHandler invalidParameterHandler,
-            ManifestReader manifestReader,
-            UserIO userIO,
-            FileInitializer fileInitializer,
-            VariableRepository variableRepository,
-            ExpressionConfigUpdater expressionConfigUpdater) {
+    public InitCommandHandler(SafeCommandHandler invalidParameterHandler, ManifestReader manifestReader, UserIO userIO, FileInitializer fileInitializer, VariableRepository variableRepository, ExpressionConfigUpdater expressionConfigUpdater, FileIO fileIO, PathsCreator pathsCreator) {
         this.invalidParameterHandler = invalidParameterHandler;
         this.manifestReader = manifestReader;
         this.userIO = userIO;
         this.fileInitializer = fileInitializer;
         this.variableRepository = variableRepository;
         this.expressionConfigUpdater = expressionConfigUpdater;
+        this.fileIO = fileIO;
+        this.pathsCreator = pathsCreator;
     }
 
     @Override
@@ -48,6 +49,7 @@ public class InitCommandHandler implements CommandHandler {
         updateExpressionConfig(manifest);
         initProperties(manifest);
         initFiles(manifest, templateDir);
+        saveTemplate(manifest, templateDir);
     }
 
     private static String getTemplateDir(List<String> parameters) {
@@ -79,6 +81,19 @@ public class InitCommandHandler implements CommandHandler {
                 throw new CannotFindFileException(targetPath.toString());
             }
         }
+    }
+
+    private void saveTemplate(Manifest manifest, String templateDir) throws Exception {
+        userIO.println("Save template as (leave empty if you don't want to save it): ");
+        final String userTemplateName = userIO.read();
+        copyFileToHome(Paths.get(templateDir, MANIFEST_FILE_NAME), Paths.get(userTemplateName, MANIFEST_FILE_NAME));
+        for (String path : manifest.getInitFiles())
+            copyFileToHome(Paths.get(templateDir, path), Paths.get(userTemplateName, path));
+    }
+
+    private void copyFileToHome(Path source, Path target) throws IOException {
+        final String data = fileIO.read(source);
+        fileIO.write(pathsCreator.createUserHome().resolve(target), data);
     }
 
     private Path createTargetPath(Manifest manifest, String path) throws UndefinedVariableException {

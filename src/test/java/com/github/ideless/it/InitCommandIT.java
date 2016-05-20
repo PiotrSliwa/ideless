@@ -2,12 +2,20 @@ package com.github.ideless.it;
 
 import com.github.ideless.running.SandboxManager;
 import com.google.gson.Gson;
+import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import org.apache.commons.io.FileUtils;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.startsWith;
+import org.junit.After;
 import org.junit.Assert;
 import static org.junit.Assert.assertThat;
 import org.junit.Before;
@@ -17,6 +25,7 @@ public class InitCommandIT {
 
     private static final Gson GSON = new Gson();
 
+    private static final Path IDELESS_HOME_DIR = Paths.get(System.getProperty("user.home")).resolve(".ideless");
     private static final String FILE_NAME = "file1";
     private static final String FILE_DATA = "some data";
     private static final String BEFORE_EXPR = "something";
@@ -47,15 +56,43 @@ public class InitCommandIT {
     }
 
     private static String runInitCommand(SandboxManager manager) throws Exception {
-        String output = manager.getRunner().run("init " + manager.getTemplateDirName());
+        return runInitCommand(manager, manager.getTemplateDirName());
+    }
+
+    private static String runInitCommand(SandboxManager manager, String parameter) throws Exception {
+        String output = manager.getRunner().run("init " + parameter);
         manager.write("output.log", output);
         return output;
+    }
+
+    private void assertFileInUserHomeMatches(Path path, String expectedContent) throws IOException {
+        try (Stream<String> stream = Files.lines(IDELESS_HOME_DIR.resolve(path))) {
+            Assert.assertEquals(expectedContent, stream.collect(Collectors.joining("\n")));
+        }
+    }
+
+    private static String runInitCommandWithoutSavingTemplate(SandboxManager manager) throws Exception {
+        manager.getRunner().addInput("\n");
+        return runInitCommand(manager);
     }
 
     @Before
     public void beforeTest() {
         manifestFile = new HashMap<>();
         properties = new HashMap<>();
+    }
+
+    @After
+    public void afterTest() throws IOException {
+        cleanupUserHome();
+    }
+
+    private void cleanupUserHome() throws IOException {
+        File dir = IDELESS_HOME_DIR.toFile();
+        if (dir.exists()) {
+            FileUtils.cleanDirectory(dir);
+            dir.delete();
+        }
     }
 
     @Test
@@ -108,7 +145,7 @@ public class InitCommandIT {
         SandboxManager manager = initValid(manifestFile);
         manager.writeToTemplateDir(FILE_NAME, FILE_DATA);
 
-        String out = runInitCommand(manager);
+        String out = runInitCommandWithoutSavingTemplate(manager);
         assertThat(out, startsWith("Initializing file: " + FILE_NAME));
         Assert.assertEquals(FILE_DATA, manager.read(FILE_NAME));
     }
@@ -124,7 +161,7 @@ public class InitCommandIT {
         manager.writeToTemplateDir(FILE_NAME, FILE_DATA);
         manager.getRunner().addInput("dummy");
 
-        String out = runInitCommand(manager);
+        String out = runInitCommandWithoutSavingTemplate(manager);
         assertThat(out, startsWith(PROPERTY_NAME + " (" + PROPERTY_DESCRIPTION + ")"));
     }
 
@@ -159,7 +196,7 @@ public class InitCommandIT {
         String dummyString = "dummy string";
         manager.writeToTemplateDir(FILE_NAME, BEFORE_EXPR + "{{ \"" + dummyString + "\" }}" + AFTER_EXPR);
 
-        String out = runInitCommand(manager);
+        String out = runInitCommandWithoutSavingTemplate(manager);
         assertThat(out, startsWith("Initializing file: " + FILE_NAME));
         Assert.assertEquals(BEFORE_EXPR + dummyString + AFTER_EXPR, manager.read(FILE_NAME));
     }
@@ -187,7 +224,7 @@ public class InitCommandIT {
         manager.writeToTemplateDir(FILE_NAME, BEFORE_EXPR + "{{ $properties." + PROPERTY_NAME + " }}" + AFTER_EXPR);
         manager.getRunner().addInput(USER_VALUE);
 
-        String out = runInitCommand(manager);
+        String out = runInitCommandWithoutSavingTemplate(manager);
         assertThat(out, containsString("Initializing file: " + FILE_NAME));
         Assert.assertEquals(BEFORE_EXPR + USER_VALUE + AFTER_EXPR, manager.read(FILE_NAME));
     }
@@ -205,7 +242,7 @@ public class InitCommandIT {
         manager.writeToTemplateDir(FILE_NAME, template);
         manager.getRunner().addInput(USER_VALUE);
 
-        String out = runInitCommand(manager);
+        String out = runInitCommandWithoutSavingTemplate(manager);
         assertThat(out, containsString("Initializing file: " + FILE_NAME));
         Assert.assertEquals(template, manager.read(FILE_NAME));
     }
@@ -235,7 +272,7 @@ public class InitCommandIT {
         manager.writeToTemplateDir(FILE_NAME, BEFORE_EXPR + "< $properties." + PROPERTY_NAME + " >" + AFTER_EXPR);
         manager.getRunner().addInput(USER_VALUE);
 
-        String out = runInitCommand(manager);
+        String out = runInitCommandWithoutSavingTemplate(manager);
         assertThat(out, containsString("Initializing file: " + FILE_NAME));
         Assert.assertEquals(BEFORE_EXPR + USER_VALUE + AFTER_EXPR, manager.read(FILE_NAME));
     }
@@ -249,7 +286,7 @@ public class InitCommandIT {
         manager.writeToTemplateDir(FILE_NAME, FILE_DATA);
 
         String expectedTargetFile = directory + "/" + FILE_NAME;
-        String out = runInitCommand(manager);
+        String out = runInitCommandWithoutSavingTemplate(manager);
         assertThat(out, containsString("Initializing file: " + expectedTargetFile));
         Assert.assertEquals(FILE_DATA, manager.read(expectedTargetFile));
     }
@@ -280,9 +317,24 @@ public class InitCommandIT {
         manager.writeToTemplateDir(FILE_NAME, FILE_DATA);
 
         String expectedTargetFile = directory + "/" + FILE_NAME;
-        String out = runInitCommand(manager);
+        String out = runInitCommandWithoutSavingTemplate(manager);
         assertThat(out, containsString("Initializing file: " + expectedTargetFile));
         Assert.assertEquals(FILE_DATA, manager.read(expectedTargetFile));
+    }
+
+    @Test
+    public void shallAskForSaveasNameAndSaveItInSuchDirectoryInUserHome() throws Exception {
+        final String saveasName = "someName";
+
+        manifestFile.put("initFiles", Arrays.asList(FILE_NAME));
+        SandboxManager manager = initValid(manifestFile);
+        manager.writeToTemplateDir(FILE_NAME, FILE_DATA);
+
+        manager.getRunner().addInput(saveasName);
+
+        String firstOut = runInitCommand(manager);
+        assertThat(firstOut, containsString("Save template as (leave empty if you don't want to save it): "));
+        assertFileInUserHomeMatches(Paths.get(saveasName, FILE_NAME), FILE_DATA);
     }
 
 }
