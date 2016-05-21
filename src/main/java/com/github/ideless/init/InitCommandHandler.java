@@ -18,7 +18,6 @@ import java.util.List;
 public class InitCommandHandler implements CommandHandler {
 
     private static final String MANIFEST_FILE_NAME = ".ideless";
-    private static final int EXPRESSION_FORMAT_SIZE = 3;
 
     private final SafeCommandHandler invalidParameterHandler;
     private final ManifestReader manifestReader;
@@ -146,9 +145,7 @@ public class InitCommandHandler implements CommandHandler {
 
     private Manifest readManifest(Path templateDir) throws Exception {
         try {
-            Manifest manifest = manifestReader.read(templateDir.resolve(".ideless"));
-            validate(manifest);
-            return manifest;
+            return manifestReader.read(templateDir.resolve(".ideless"));
         }
         catch (IOException ex) {
             throw new InvalidTemplateException(ex.getMessage());
@@ -156,15 +153,6 @@ public class InitCommandHandler implements CommandHandler {
         catch (JsonSyntaxException ex) {
             throw new InvalidJsonException(ex.getMessage());
         }
-    }
-
-    private void validate(Manifest manifest) throws Exception {
-        if (manifest == null)
-            throw new InvalidTemplateException("null manifest");
-        if (manifest.getInitFiles() == null)
-            throw new LackOfFieldException("initFiles");
-        if (manifest.getExpressionFormat() != null && manifest.getExpressionFormat().size() != EXPRESSION_FORMAT_SIZE)
-            throw new InvalidNumberOfElementsInArrayException("expressionFormat", EXPRESSION_FORMAT_SIZE);
     }
 
 }

@@ -92,18 +92,6 @@ public class InitCommandHandlerTest {
         sut.handle(Arrays.asList(TEMPLATE_NAME));
     }
 
-    @Test(expected = InvalidTemplateException.class)
-    public void shallThrowErrorWhenNullManifestReturned() throws Exception {
-        when(manifestReader.read(any())).thenReturn(null);
-        sut.handle(Arrays.asList(TEMPLATE_NAME));
-    }
-
-    @Test(expected = LackOfFieldException.class)
-    public void shallThrowErrorWhenEmptyManifestReturned() throws Exception {
-        when(manifestReader.read(any())).thenReturn(new Manifest());
-        sut.handle(Arrays.asList(TEMPLATE_NAME));
-    }
-
     @Test
     public void shallCreateTemplateFromGivenName() throws Exception {
         when(manifestReader.read(any())).thenReturn(new Manifest(FILES));
@@ -190,12 +178,6 @@ public class InitCommandHandlerTest {
 
         verify(userIO).print(Messages.getPropertyQuestionMessage(property));
         verify(variableRepository).setProperty(property.getName(), userValue);
-    }
-
-    @Test(expected = InvalidNumberOfElementsInArrayException.class)
-    public void shallThrowErrorWhenExpressionFormatDoesNotContainRequiredNumberOfElements() throws Exception {
-        when(manifestReader.read(any())).thenReturn(new Manifest(Arrays.asList(FILE), null, Arrays.asList("1")));
-        sut.handle(Arrays.asList(TEMPLATE_NAME));
     }
 
     @Test
