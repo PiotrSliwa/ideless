@@ -36,6 +36,7 @@ public class Ideless {
         FileInitializer fileInitializer = new FileInitializer(fileIO, contentProcessor);
         CommandDispatcher dispatcher = new CommandDispatcher(defaultHandler, errorHandler);
         PathsCreator pathsCreator = new PathsCreator();
+        TemplateCreator templateCreator = new TemplateCreator(fileIO, pathsCreator);
         dispatcher.addHandler("init", new InitCommandHandler(
                 defaultHandler,
                 manifestReader,
@@ -44,7 +45,8 @@ public class Ideless {
                 variableRepository,
                 contentProcessor,
                 fileIO,
-                pathsCreator));
+                pathsCreator,
+                templateCreator));
         dispatcher.dispatch(args);
 
     }

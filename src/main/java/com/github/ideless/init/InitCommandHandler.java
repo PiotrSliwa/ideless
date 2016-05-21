@@ -4,6 +4,8 @@ import com.github.ideless.CommandHandler;
 import com.github.ideless.FileIO;
 import com.github.ideless.PathsCreator;
 import com.github.ideless.SafeCommandHandler;
+import com.github.ideless.Template;
+import com.github.ideless.TemplateCreator;
 import com.github.ideless.UserIO;
 import com.github.ideless.processors.ExpressionConfigUpdater;
 import com.github.ideless.processors.UndefinedVariableException;
@@ -26,6 +28,7 @@ public class InitCommandHandler implements CommandHandler {
     private final ExpressionConfigUpdater expressionConfigUpdater;
     private final FileIO fileIO;
     private final PathsCreator pathsCreator;
+    private final TemplateCreator templateCreator;
 
     public InitCommandHandler(
             SafeCommandHandler invalidParameterHandler,
@@ -35,7 +38,8 @@ public class InitCommandHandler implements CommandHandler {
             VariableRepository variableRepository,
             ExpressionConfigUpdater expressionConfigUpdater,
             FileIO fileIO,
-            PathsCreator pathsCreator) {
+            PathsCreator pathsCreator,
+            TemplateCreator templateCreator) {
         this.invalidParameterHandler = invalidParameterHandler;
         this.manifestReader = manifestReader;
         this.userIO = userIO;
@@ -44,6 +48,7 @@ public class InitCommandHandler implements CommandHandler {
         this.expressionConfigUpdater = expressionConfigUpdater;
         this.fileIO = fileIO;
         this.pathsCreator = pathsCreator;
+        this.templateCreator = templateCreator;
     }
 
     @Override
@@ -52,35 +57,17 @@ public class InitCommandHandler implements CommandHandler {
             invalidParameterHandler.handle(parameters);
             return;
         }
-        TemplateInfo templateInfo = getTemplateInfo(parameters);
-        Manifest manifest = readManifest(templateInfo.dirPath);
+        Template template = getTemplate(parameters);
+        Manifest manifest = readManifest(template.getPath());
         updateExpressionConfig(manifest);
         initProperties(manifest);
-        initFiles(manifest, templateInfo.dirPath);
-        saveTemplate(manifest, templateInfo);
+        initFiles(manifest, template.getPath());
+        saveTemplateWithUserSpecifiedName(manifest, template);
     }
 
-    private static class TemplateInfo {
-        enum TemplateType { Local, UserHome }
-
-        Path dirPath;
-        TemplateType type;
-
-        public TemplateInfo(Path dirPath, TemplateType type) {
-            this.dirPath = dirPath;
-            this.type = type;
-        }
-    }
-
-    private TemplateInfo getTemplateInfo(List<String> parameters) throws InvalidTemplateException {
-        String parameter = parameters.get(0);
-        Path localTemplateDir = Paths.get(parameter);
-        if (fileIO.isReadable(localTemplateDir))
-            return new TemplateInfo(localTemplateDir, TemplateInfo.TemplateType.Local);
-        Path homeTemplateDir = pathsCreator.createUserHome().resolve(parameter);
-        if (fileIO.isReadable(homeTemplateDir))
-            return new TemplateInfo(homeTemplateDir, TemplateInfo.TemplateType.UserHome);
-        throw new InvalidTemplateException(localTemplateDir.toString());
+    private Template getTemplate(List<String> parameters) throws InvalidTemplateException {
+        String templateName = parameters.get(0);
+        return templateCreator.create(templateName);
     }
 
     private void initProperties(Manifest manifest) throws IOException {
@@ -110,14 +97,14 @@ public class InitCommandHandler implements CommandHandler {
         }
     }
 
-    private void saveTemplate(Manifest manifest, TemplateInfo templateInfo) throws Exception {
-        if (templateInfo.type == TemplateInfo.TemplateType.UserHome)
+    private void saveTemplateWithUserSpecifiedName(Manifest manifest, Template template) throws Exception {
+        if (template.getType() == Template.Type.UserHome)
             return;
         userIO.println("Save template as (leave empty if you don't want to save it): ");
         final String userTemplateName = userIO.read();
-        copyFileToHome(templateInfo.dirPath.resolve(MANIFEST_FILE_NAME), Paths.get(userTemplateName, MANIFEST_FILE_NAME));
+        copyFileToHome(template.getPath().resolve(MANIFEST_FILE_NAME), Paths.get(userTemplateName, MANIFEST_FILE_NAME));
         for (String path : manifest.getInitFiles())
-            copyFileToHome(templateInfo.dirPath.resolve(path), Paths.get(userTemplateName, path));
+            copyFileToHome(template.getPath().resolve(path), Paths.get(userTemplateName, path));
     }
 
     private void copyFileToHome(Path source, Path target) throws IOException {
