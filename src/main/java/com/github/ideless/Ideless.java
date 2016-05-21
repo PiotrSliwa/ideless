@@ -32,7 +32,8 @@ public class Ideless {
         VariableProcessor variableProcessor = new VariableProcessor(variableRepository, jsonIO);
         ExpressionProcessor expressionProcessor = new ExpressionProcessor(variableProcessor);
         ContentProcessor contentProcessor = new ContentProcessor(expressionProcessor);
-        ManifestReader manifestReader = new ManifestReader(fileIO);
+        GsonWrapper gsonWrapper = new GsonWrapper();
+        ManifestReader manifestReader = new ManifestReader(fileIO, gsonWrapper);
         FileInitializer fileInitializer = new FileInitializer(fileIO, contentProcessor);
         CommandDispatcher dispatcher = new CommandDispatcher(defaultHandler, errorHandler);
         PathsCreator pathsCreator = new PathsCreator();

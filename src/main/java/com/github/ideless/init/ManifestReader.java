@@ -1,7 +1,7 @@
 package com.github.ideless.init;
 
 import com.github.ideless.FileIO;
-import com.google.gson.Gson;
+import com.github.ideless.GsonWrapper;
 import com.google.gson.JsonSyntaxException;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -9,14 +9,16 @@ import java.nio.file.Path;
 public class ManifestReader {
 
     private final FileIO fileIO;
+    private final GsonWrapper gsonWrapper;
 
-    public ManifestReader(FileIO fileIO) {
+    public ManifestReader(FileIO fileIO, GsonWrapper gsonWrapper) {
         this.fileIO = fileIO;
+        this.gsonWrapper = gsonWrapper;
     }
 
     public Manifest read(Path path) throws IOException, JsonSyntaxException {
         String data = fileIO.read(path);
-        return new Gson().fromJson(data, Manifest.class);
+        return gsonWrapper.fromJson(data, Manifest.class);
     }
 
 }
