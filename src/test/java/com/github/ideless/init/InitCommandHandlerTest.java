@@ -54,7 +54,7 @@ public class InitCommandHandlerTest {
     private InitCommandHandler sut;
 
     @Before
-    public void beforeTest() throws InvalidTemplateException {
+    public void beforeTest() throws InvalidTemplateException, IOException {
         defaultHandler = mock(SafeCommandHandler.class);
         manifestReader = mock(ManifestReader.class);
         userIO = mock(UserIO.class);

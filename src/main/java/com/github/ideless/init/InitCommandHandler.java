@@ -64,7 +64,7 @@ public class InitCommandHandler implements CommandHandler {
         saveTemplateWithUserSpecifiedName(manifest, template);
     }
 
-    private Template getTemplate(List<String> parameters) throws InvalidTemplateException {
+    private Template getTemplate(List<String> parameters) throws InvalidTemplateException, IOException {
         String templateName = parameters.get(0);
         return templateCreator.create(templateName);
     }

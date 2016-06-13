@@ -34,16 +34,26 @@ public class InitCommandIT {
     private static final String PROPERTY_NAME = "prop_name";
     private static final String PROPERTY_DESCRIPTION = "Some prop description.";
     private static final String USER_VALUE = "DUMMY";
+    private static final String SAVEAS_NAME = "saveasName";
 
     private Map<String, Object> manifestFile;
     private Map<String, Object> properties;
 
-    private SandboxManager initValid(String manifestData, int stackElem) throws IOException {
+    private SandboxManager initBare(int stackElem) {
         StackTraceElement ste = Thread.currentThread().getStackTrace()[stackElem];
         String[] classElems = ste.getClassName().split("\\.");
         String suiteName = classElems[classElems.length - 1];
         String testName = ste.getMethodName();
         SandboxManager manager = new SandboxManager(suiteName + "_" + testName);
+        return manager;
+    }
+
+    private SandboxManager initBare() {
+        return initBare(2);
+    }
+
+    private SandboxManager initValid(String manifestData, int stackElem) throws IOException {
+        SandboxManager manager = initBare(stackElem + 1);
         manager.writeToTemplateDir(".ideless", manifestData);
         return manager;
     }
@@ -325,33 +335,42 @@ public class InitCommandIT {
 
     @Test
     public void shallAskForSaveasNameAndSaveItInSuchDirectoryInUserHome() throws Exception {
-        final String saveasName = "someName";
-
         manifestFile.put("initFiles", Arrays.asList(FILE_NAME));
         SandboxManager manager = initValid(manifestFile);
         manager.writeToTemplateDir(FILE_NAME, FILE_DATA);
 
-        manager.getRunner().addInput(saveasName);
+        manager.getRunner().addInput(SAVEAS_NAME);
 
         String out = runInitCommand(manager);
         assertThat(out, containsString("Save template as (leave empty if you don't want to save it): "));
-        assertFileInUserHomeMatches(Paths.get(saveasName, FILE_NAME), FILE_DATA);
+        assertFileInUserHomeMatches(Paths.get(SAVEAS_NAME, FILE_NAME), FILE_DATA);
     }
 
     @Test
     public void shallUseSavedTemplate() throws Exception {
-        final String saveasName = "someName";
-
         manifestFile.put("initFiles", Arrays.asList(FILE_NAME));
         SandboxManager manager = initValid(manifestFile);
         manager.writeToTemplateDir(FILE_NAME, FILE_DATA);
 
-        manager.getRunner().addInput(saveasName);
+        manager.getRunner().addInput(SAVEAS_NAME);
 
         runInitCommand(manager);
-        String out = runInitCommand(manager, saveasName);
+        String out = runInitCommand(manager, SAVEAS_NAME);
         assertThat(out, containsString("Initializing file: " + FILE_NAME));
         assertThat(out, not(containsString("Save template as (leave empty if you don't want to save it): ")));
+        Assert.assertEquals(FILE_DATA, manager.read(FILE_NAME));
+    }
+
+    @Test
+    public void shallDownloadTemplateFromGithub() throws Exception {
+        final String testRepo = "git://github.com/PiotrSliwa/ideless-test-template-basic.git";
+        SandboxManager manager = initBare();
+
+        manager.getRunner().addInput(SAVEAS_NAME);
+
+        String out = runInitCommand(manager, testRepo);
+        assertThat(out, containsString("Downloading template: " + testRepo));
+        assertThat(out, containsString("Initializing file: " + FILE_NAME));
         Assert.assertEquals(FILE_DATA, manager.read(FILE_NAME));
     }
 
